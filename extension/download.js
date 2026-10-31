@@ -91,6 +91,16 @@ function templatedName(height) {
   });
 }
 
+/** "en" → "English"; "und" (undetermined) and unknown codes → "". */
+function languageName(code) {
+  if (!code || code === "und") return "";
+  try {
+    return new Intl.DisplayNames([navigator.language], { type: "language" }).of(code) || code;
+  } catch {
+    return code;
+  }
+}
+
 /** Index of the quality option that matches the person's default. */
 function preferredQuality(heights, preference) {
   if (!heights.length || preference === "highest") return 0;
@@ -151,7 +161,7 @@ async function updateAudio() {
   const primary = externalAudio ? await externalAudio.getPrimaryAudioTrack() : video ? await video.getPrimaryPairableAudioTrack() : await mainInput.getPrimaryAudioTrack();
   for (let index = 0; index < audioTracks.length; index += 1) {
     const track = audioTracks[index];
-    const name = await track.getName() || await track.getLanguageCode() || `Audio ${index + 1}`;
+    const name = await track.getName() || languageName(await track.getLanguageCode()) || `Audio ${index + 1}`;
     const option = new Option(name, String(index));
     option.selected = track === primary;
     audioSelect.add(option);

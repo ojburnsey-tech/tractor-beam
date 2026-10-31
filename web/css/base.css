@@ -1,0 +1,79 @@
+/* Typography and element defaults. Tracking tightens as size grows and
+   leading loosens as it shrinks, following the system type scale. */
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--label);
+  font: 400 15px/1.47 var(--font);
+  letter-spacing: -0.009em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11";
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+
+.large-title {
+  font: 700 34px/1.12 var(--font-display);
+  letter-spacing: -0.021em;
+}
+
+.title-1 { font: 700 28px/1.14 var(--font-display); letter-spacing: -0.02em; }
+.title-2 { font: 700 22px/1.18 var(--font-display); letter-spacing: -0.017em; }
+.title-3 { font: 600 19px/1.21 var(--font-display); letter-spacing: -0.012em; }
+.headline { font-weight: 600; font-size: 15px; letter-spacing: -0.009em; }
+.subheadline { font-size: 14px; line-height: 1.43; letter-spacing: -0.006em; }
+.footnote { font-size: 13px; line-height: 1.38; letter-spacing: -0.003em; color: var(--secondary); }
+.caption { font-size: 12px; line-height: 1.33; letter-spacing: 0; color: var(--secondary); }
+.secondary { color: var(--secondary); }
+.tertiary { color: var(--tertiary); }
+.tabular { font-variant-numeric: tabular-nums; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+::selection { background: var(--selection); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+:focus:not(:focus-visible) { outline: none; }
+
+svg.icon {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.125em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

@@ -39,7 +39,7 @@ export function recommendConcurrency(entries, site) {
   }
   const tried = LEVELS.filter((level) => basis[level]);
   if (!tried.length) {
-    return { level: DEFAULT_LEVEL, reason: "No downloads from this site yet, so the balanced setting is used.", basis, exploring: false };
+    return { level: DEFAULT_LEVEL, reason: "Not enough finished downloads from this site yet, so the balanced setting is used.", basis, exploring: false };
   }
 
   let best = tried[0];

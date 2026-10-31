@@ -159,8 +159,9 @@ lets the save dialog open after a click, so downloads cannot start unattended.
 * Sessions: random 256-bit tokens, stored hashed; `HttpOnly; SameSite=Lax`,
   `Secure` over HTTPS; 30-day rolling expiry.
 * CSRF: cookie-authenticated writes require `X-Requested-With: grabber` (forces
-  a CORS preflight that the server never approves) and a same-origin `Origin`
-  header when present.
+  a CORS preflight that the server never approves) and, when an `Origin`
+  header is present, that its host matches the request's host (hosts, not
+  schemes, so HTTPS-terminating proxies such as Tailscale Serve work).
 * Sign-up is open only while the server has no account (`ALLOW_SIGNUP=1`
   overrides). It's a personal server.
 * Rate limits on sign-in, sign-up and link requests; constant-time comparisons;

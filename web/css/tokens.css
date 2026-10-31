@@ -1,0 +1,180 @@
+/* Design tokens. Light is the default; dark follows the system unless the
+   person picked a theme in Settings (data-theme on <html>). */
+
+@font-face {
+  font-family: "Inter Var";
+  src: url("/fonts/inter-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Var", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Var", system-ui, sans-serif;
+
+  --bg: #f5f5f7;
+  --bg-grouped: #f2f2f7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #fafafc;
+  --sidebar: rgba(246, 246, 248, 0.72);
+  --bar: rgba(250, 250, 252, 0.78);
+  --label: #1d1d1f;
+  --secondary: #6e6e73;
+  --tertiary: #86868b;
+  --quaternary: #c7c7cc;
+  --separator: rgba(60, 60, 67, 0.14);
+  --separator-strong: rgba(60, 60, 67, 0.26);
+  --fill: rgba(118, 118, 128, 0.12);
+  --fill-hover: rgba(118, 118, 128, 0.18);
+  --fill-pressed: rgba(118, 118, 128, 0.24);
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --accent-pressed: #0068d1;
+  --accent-text: #0066cc;
+  --on-accent: #ffffff;
+  --accent-wash: rgba(0, 113, 227, 0.08);
+  --selection: rgba(0, 113, 227, 0.12);
+  --green: #248a3d;
+  --green-fill: #34c759;
+  --red: #d70015;
+  --red-fill: #ff3b30;
+  --orange: #c93400;
+  --orange-fill: #ff9500;
+  --scrim: rgba(0, 0, 0, 0.32);
+  --shadow-card: 0 0.5px 0 rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-sheet: 0 24px 64px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  --shadow-popover: 0 10px 32px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  --focus: rgba(0, 113, 227, 0.5);
+
+  /* charts */
+  --chart-surface: var(--surface);
+  --chart-grid: #e8e8ed;
+  --chart-axis: #d2d2d7;
+  --chart-series: #0071e3;
+  --chart-wash: rgba(0, 113, 227, 0.1);
+  --heat-0: #cde2fb;
+  --heat-1: #9ec5f4;
+  --heat-2: #6da7ec;
+  --heat-3: #3987e5;
+  --heat-4: #256abf;
+  --heat-5: #184f95;
+  --heat-6: #0d366b;
+  --heat-empty: #f0f0f3;
+
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 18px;
+  --sidebar-width: 248px;
+  --content-max: 980px;
+  --spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #000000;
+    --bg-grouped: #000000;
+    --surface: #1c1c1e;
+    --surface-raised: #2c2c2e;
+    --surface-sunken: #141416;
+    --sidebar: rgba(30, 30, 32, 0.72);
+    --bar: rgba(22, 22, 24, 0.78);
+    --label: #f5f5f7;
+    --secondary: #a1a1a6;
+    --tertiary: #86868b;
+    --quaternary: #48484a;
+    --separator: rgba(84, 84, 88, 0.55);
+    --separator-strong: rgba(84, 84, 88, 0.85);
+    --fill: rgba(118, 118, 128, 0.24);
+    --fill-hover: rgba(118, 118, 128, 0.32);
+    --fill-pressed: rgba(118, 118, 128, 0.4);
+    --accent: #0a84ff;
+    --accent-hover: #2491ff;
+    --accent-pressed: #0077ed;
+    --accent-text: #2997ff;
+    --accent-wash: rgba(10, 132, 255, 0.14);
+    --selection: rgba(10, 132, 255, 0.2);
+    --green: #30d158;
+    --green-fill: #30d158;
+    --red: #ff453a;
+    --red-fill: #ff453a;
+    --orange: #ff9f0a;
+    --orange-fill: #ff9f0a;
+    --scrim: rgba(0, 0, 0, 0.5);
+    --shadow-card: none;
+    --shadow-sheet: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+    --shadow-popover: 0 10px 32px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+    --focus: rgba(10, 132, 255, 0.6);
+    --chart-grid: #2c2c2e;
+    --chart-axis: #3a3a3c;
+    --chart-series: #0a84ff;
+    --chart-wash: rgba(10, 132, 255, 0.16);
+    --heat-0: #0d366b;
+    --heat-1: #184f95;
+    --heat-2: #256abf;
+    --heat-3: #3987e5;
+    --heat-4: #6da7ec;
+    --heat-5: #9ec5f4;
+    --heat-6: #cde2fb;
+    --heat-empty: #232325;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-grouped: #000000;
+  --surface: #1c1c1e;
+  --surface-raised: #2c2c2e;
+  --surface-sunken: #141416;
+  --sidebar: rgba(30, 30, 32, 0.72);
+  --bar: rgba(22, 22, 24, 0.78);
+  --label: #f5f5f7;
+  --secondary: #a1a1a6;
+  --tertiary: #86868b;
+  --quaternary: #48484a;
+  --separator: rgba(84, 84, 88, 0.55);
+  --separator-strong: rgba(84, 84, 88, 0.85);
+  --fill: rgba(118, 118, 128, 0.24);
+  --fill-hover: rgba(118, 118, 128, 0.32);
+  --fill-pressed: rgba(118, 118, 128, 0.4);
+  --accent: #0a84ff;
+  --accent-hover: #2491ff;
+  --accent-pressed: #0077ed;
+  --accent-text: #2997ff;
+  --accent-wash: rgba(10, 132, 255, 0.14);
+  --selection: rgba(10, 132, 255, 0.2);
+  --green: #30d158;
+  --green-fill: #30d158;
+  --red: #ff453a;
+  --red-fill: #ff453a;
+  --orange: #ff9f0a;
+  --orange-fill: #ff9f0a;
+  --scrim: rgba(0, 0, 0, 0.5);
+  --shadow-card: none;
+  --shadow-sheet: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  --shadow-popover: 0 10px 32px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --focus: rgba(10, 132, 255, 0.6);
+  --chart-grid: #2c2c2e;
+  --chart-axis: #3a3a3c;
+  --chart-series: #0a84ff;
+  --chart-wash: rgba(10, 132, 255, 0.16);
+  --heat-0: #0d366b;
+  --heat-1: #184f95;
+  --heat-2: #256abf;
+  --heat-3: #3987e5;
+  --heat-4: #6da7ec;
+  --heat-5: #9ec5f4;
+  --heat-6: #cde2fb;
+  --heat-empty: #232325;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --separator: rgba(60, 60, 67, 0.45);
+    --secondary: #3a3a3c;
+  }
+}

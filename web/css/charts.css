@@ -1,0 +1,87 @@
+.chart-card {
+  margin: 0 0 20px;
+  padding: 16px 18px 14px;
+  background: var(--surface);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-card);
+}
+
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.chart-title { font-size: 15px; font-weight: 600; letter-spacing: -0.009em; }
+.chart-subtitle { font-size: 13px; color: var(--secondary); margin-top: 1px; }
+.chart-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.chart-toggle { font-size: 13px; min-height: 28px; }
+
+.chart-plot { position: relative; width: 100%; }
+.chart { display: block; overflow: visible; font-family: var(--font); }
+
+.chart .tick { font-size: 11px; fill: var(--tertiary); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.chart .tick.unit { font-weight: 500; }
+.chart .grid { stroke: var(--chart-grid); stroke-width: 1; }
+.chart .axis { stroke: var(--chart-axis); stroke-width: 1; }
+.chart .series-line { fill: none; stroke: var(--chart-series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .series-wash { fill: var(--chart-wash); stroke: none; }
+.chart .series-dot { fill: var(--chart-series); }
+.chart .reference { stroke: var(--secondary); stroke-width: 1; opacity: 0.55; }
+.chart .reference-label {
+  font-size: 12px;
+  font-weight: 500;
+  fill: var(--secondary);
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--chart-surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.chart .crosshair { stroke: var(--tertiary); stroke-width: 1; }
+.chart .crosshair-dot { fill: var(--chart-series); stroke: var(--chart-surface); stroke-width: 2; }
+.chart .overlay { fill: transparent; cursor: crosshair; outline: none; }
+.chart .overlay:focus-visible { stroke: var(--focus); stroke-width: 2; }
+.chart .bar { fill: var(--chart-series); }
+.chart .hit { fill: transparent; outline: none; cursor: default; }
+.chart .hit.active, .chart .hit:focus-visible { fill: var(--fill); fill-opacity: 0.45; }
+.chart .category { font-size: 13px; fill: var(--label); }
+.chart .bar-value { font-size: 12px; fill: var(--secondary); font-variant-numeric: tabular-nums; }
+
+.heatmap .cell { transition: opacity 120ms ease; outline: none; }
+.heatmap .cell.empty { fill: var(--heat-empty); }
+.heatmap .cell.active, .heatmap .cell:focus-visible { stroke: var(--label); stroke-width: 1.5; }
+.heat-0 { fill: var(--heat-0); background: var(--heat-0); }
+.heat-1 { fill: var(--heat-1); background: var(--heat-1); }
+.heat-2 { fill: var(--heat-2); background: var(--heat-2); }
+.heat-3 { fill: var(--heat-3); background: var(--heat-3); }
+.heat-4 { fill: var(--heat-4); background: var(--heat-4); }
+.heat-5 { fill: var(--heat-5); background: var(--heat-5); }
+.heat-6 { fill: var(--heat-6); background: var(--heat-6); }
+
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+.heat-steps { display: inline-flex; gap: 2px; }
+.heat-steps span { width: 16px; height: 10px; border-radius: 2px; }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th, .data-table td {
+  padding: 7px 8px;
+  text-align: left;
+  border-bottom: 0.5px solid var(--separator);
+  font-weight: 400;
+}
+.data-table thead th { font-weight: 600; color: var(--secondary); font-size: 12px; }
+.data-table .numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.chart-table { max-height: 360px; overflow: auto; }

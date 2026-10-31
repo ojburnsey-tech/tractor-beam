@@ -68,6 +68,11 @@ test("cookie-authenticated writes need the CSRF header and a same-origin Origin"
   assert.equal(noHeader.status, 403);
   const foreign = await web.patch("/api/me/settings", { settings: { quality: "720" } }, { Origin: "https://evil.example" });
   assert.equal(foreign.status, 403);
+  const lookalike = await web.patch("/api/me/settings", { settings: { quality: "720" } }, { Origin: server.base.replace("127.0.0.1", "127.0.0.1.evil.example") });
+  assert.equal(lookalike.status, 403);
+  // A TLS-terminating proxy turns https into http; the host still matches.
+  const proxied = await web.patch("/api/me/settings", { settings: { quality: "1080" } }, { Origin: server.base.replace("http:", "https:") });
+  assert.equal(proxied.status, 200);
   const ok = await web.patch("/api/me/settings", { settings: { quality: "720", neverSync: ["example.com"] } }, { Origin: server.base });
   assert.equal(ok.status, 200);
   assert.equal(ok.json.settings.quality, "720");

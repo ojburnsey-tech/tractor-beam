@@ -67,9 +67,21 @@ export function createApp(config) {
     return config.trustProxy && String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim() === "https";
   }
 
-  function expectedOrigin(req, secure) {
-    const host = (config.trustProxy && req.headers["x-forwarded-host"]) || req.headers.host;
-    return `${secure ? "https" : "http"}://${host}`;
+  /** The host the browser addressed (the proxy's, when one is trusted). */
+  function requestHost(req) {
+    return String((config.trustProxy && req.headers["x-forwarded-host"]) || req.headers.host || "").toLowerCase();
+  }
+
+  /**
+   * Compares hosts rather than full origins: a TLS-terminating proxy (Caddy,
+   * Tailscale Serve) makes the browser's https:// origin arrive as plain HTTP.
+   */
+  function sameOrigin(origin, req) {
+    try {
+      return new URL(origin).host.toLowerCase() === requestHost(req);
+    } catch {
+      return false;
+    }
   }
 
   function webAuth(req, res, ctx) {
@@ -124,7 +136,7 @@ export function createApp(config) {
         // preflight, which this server never approves.
         if (req.headers["x-requested-with"] !== "grabber") throw new HttpError(403, "Request blocked.", "csrf");
         const origin = req.headers.origin;
-        if (origin && origin !== expectedOrigin(req, ctx.secure)) throw new HttpError(403, "Request blocked.", "csrf");
+        if (origin && !sameOrigin(origin, req)) throw new HttpError(403, "Request blocked.", "csrf");
       }
     } else if (auth === "device") {
       const result = deviceAuth(req);
