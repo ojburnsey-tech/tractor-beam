@@ -17,6 +17,7 @@ import { registerSync } from "./routes/sync.js";
 import { registerLive } from "./routes/live.js";
 import { registerInbox } from "./routes/inbox.js";
 import { registerPush } from "./routes/push.js";
+import { registerExtension } from "./routes/extension.js";
 
 export const SESSION_COOKIE = "grabber_sid";
 const WEB_ROOT = path.join(ROOT, "web");
@@ -50,7 +51,7 @@ export function createApp(config) {
   };
 
   const deps = { db, hub, config, vapid, limits, sessions };
-  for (const register of [registerAuth, registerAccount, registerDownloads, registerDevices, registerLink, registerSync, registerLive, registerInbox, registerPush]) {
+  for (const register of [registerAuth, registerAccount, registerDownloads, registerDevices, registerLink, registerSync, registerLive, registerInbox, registerPush, registerExtension]) {
     register(router, deps);
   }
 

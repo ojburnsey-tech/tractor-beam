@@ -12,6 +12,14 @@ function flag(name, fallback = false) {
   return /^(1|true|yes|on)$/i.test(value);
 }
 
+/** Push services require "mailto:…" or "https://…"; accept a bare email too. */
+function vapidSubject(value) {
+  const text = String(value || "").trim();
+  if (!text) return "mailto:owner@localhost";
+  if (/^(mailto:|https:\/\/)/i.test(text)) return text;
+  return text.includes("@") ? `mailto:${text}` : `https://${text}`;
+}
+
 export function loadConfig(overrides = {}) {
   return {
     port: Number(process.env.PORT || 4321),
@@ -24,7 +32,7 @@ export function loadConfig(overrides = {}) {
     // Set when running behind a reverse proxy that terminates HTTPS.
     trustProxy: flag("TRUST_PROXY"),
     // Contact for push services (required by the Web Push protocol).
-    vapidSubject: process.env.VAPID_SUBJECT || "mailto:owner@localhost",
+    vapidSubject: vapidSubject(process.env.VAPID_SUBJECT),
     sessionDays: Number(process.env.SESSION_DAYS || 30),
     quiet: flag("QUIET"),
     ...overrides

@@ -2,7 +2,6 @@ node_modules
 data
 dist
 test
-extension
 docs
 .git
 *.sqlite*

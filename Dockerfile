@@ -5,6 +5,7 @@ COPY package.json ./
 COPY server ./server
 COPY shared ./shared
 COPY web ./web
+COPY extension ./extension
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=4321 \

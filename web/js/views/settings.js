@@ -326,9 +326,13 @@ export function mount(container, params, shell) {
       });
     });
     if (!devices.length) children.push(row({ title: "No browsers connected yet", subtitle: "Follow the steps below to connect one." }));
+    children.push(h("a", { class: "row action", href: "/api/extension.zip", download: "" },
+      h("div", { class: "tile small" }, icon("download")),
+      h("div", { class: "row-main" }, h("div", { class: "row-title" }, "Download MP4 Grabber for Chrome"), h("div", { class: "row-subtitle" }, "Already set up to connect to this Library"))));
     const steps = h("ol", { class: "steps footnote" },
-      h("li", {}, "In Chrome, click the MP4 Grabber icon in the toolbar."),
-      h("li", {}, "Choose Connect Library and enter this address: ", h("strong", { class: "tabular" }, location.origin)),
+      h("li", {}, "Download MP4 Grabber above and unzip it (double-click the file)."),
+      h("li", {}, "In Chrome, open ", h("strong", {}, "chrome://extensions"), ", turn on Developer mode, click Load unpacked and choose the unzipped MP4 Grabber folder. Remove any older copy first."),
+      h("li", {}, "Click the MP4 Grabber icon, choose Connect Library, then Continue. The address is already filled in: ", h("strong", { class: "tabular" }, location.origin)),
       h("li", {}, "Approve the request in the tab that opens."));
     const node = section({ title: "Browsers", children });
     node.id = "browsers";

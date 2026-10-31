@@ -1,0 +1,33 @@
+# One-click hosting on Render (https://render.com).
+# Open https://render.com/deploy?repo=https://github.com/ojburnsey-tech/tractor-beam
+# and Render creates the website, its HTTPS address and a permanent disk.
+#
+# The disk keeps your account and history across restarts and updates.
+# Disks need a paid instance; "starter" is the smallest one that has them.
+
+services:
+  - type: web
+    name: tractor-beam
+    runtime: node
+    plan: starter
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/auth/state
+    autoDeploy: true
+    disk:
+      name: library-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_DIR
+        value: /var/data
+      - key: TRUST_PROXY
+        value: "1"
+      # Render asks for this when you deploy: type your email address.
+      # Apple and Google need a contact address to deliver notifications.
+      - key: VAPID_SUBJECT
+        sync: false

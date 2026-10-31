@@ -48,7 +48,10 @@ async function renderConnect(message = "") {
   show("connect");
   const stored = await chrome.storage.local.get(["lastServer", "disconnected"]);
   const fromQuery = new URL(location.href).searchParams.get("server");
-  if (!element("server").value) element("server").value = fromQuery || stored.lastServer || "http://localhost:4321";
+  // Set when the extension was downloaded from a Library (see server/routes/extension.js).
+  const preset = await fetch(chrome.runtime.getURL("config.json")).then((response) => response.json()).then((config) => config.server || "").catch(() => "");
+  element("local-hint").hidden = Boolean(preset);
+  if (!element("server").value) element("server").value = fromQuery || preset || stored.lastServer || "http://localhost:4321";
   if (!element("name").value) element("name").value = defaultName();
   element("connect-error").textContent = message || (stored.disconnected?.reason === "revoked" ? "This browser was disconnected from your Library. Connect it again to keep syncing." : "");
 }
