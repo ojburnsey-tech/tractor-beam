@@ -9,6 +9,7 @@ on any device, charts their speed, and syncs your preferences back to the extens
 | Chrome extension (v2.1.0) | `extension/` |
 | Library server (Node, SQLite, no npm dependencies) | `server/` |
 | Library website | `web/` |
+| Artifact edition (reuses `web/` views) | `artifact/` |
 | Code shared by both | `shared/` |
 
 How it fits together, and the security model, is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -24,7 +25,36 @@ How it fits together, and the security model, is in [docs/ARCHITECTURE.md](docs/
 - **Privacy.** History is encrypted in your browser with your password, so the server stores ciphertext. Incognito downloads are never saved, sites you list never leave your computer, and you can export as CSV or JSON or delete everything.
 - **Plain-language errors.** Failed downloads explain what happened and what to do, in the extension and the Library.
 
-## Put it online (no terminal)
+## Use it (free, no terminal)
+
+The Library runs as a private artifact in your Claude account:
+**https://claude.ai/artifact/6o1hAvX6AfDUCRv5Ega4G6**
+
+1. **Open your Library** at the link above in Chrome, and pin the tab (right-click the tab, then **Pin**).
+2. **Install MP4 Grabber:** in the Library, go to **Settings → Browsers → Download MP4 Grabber** and unzip the file.
+   In Chrome, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and choose the
+   **extension** folder inside. Remove any older copy of MP4 Grabber first.
+3. **Connect:** reload the Library tab, then in **Settings** choose **Connect This Browser**. MP4 Grabber opens a tab with a
+   code. Check it matches the one in your Library, then choose **Connect**.
+4. **On your phone**, open the same link in the Claude app or at claude.ai.
+
+How it behaves:
+
+- MP4 Grabber hands each finished download to the Library **while the Library is open in a tab** on that computer.
+  Downloads made while it's closed wait inside MP4 Grabber and arrive the next time you open the Library.
+- Your phone shows live progress, and its Pause and Cancel buttons work, while the computer doing the download has
+  the Library open.
+- Your history is stored in a private area of the artifact that only your Claude account can read, even if you share the link.
+- Artifacts can't send phone notifications. Use the self-hosted edition below if you need them.
+- If a browser can't connect, open MP4 Grabber's **Library** page (popup → **Connect Library**), choose **Export History**,
+  and import the file in **Settings → Your Data → Import from MP4 Grabber**.
+
+## Other ways to run it
+
+The Library can also run on a server of your own. That version adds phone notifications and syncing with the tab closed.
+In MP4 Grabber, choose **Connect Library → Use a Self-Hosted Library**.
+
+### Hosted on Render (about $7.25 a month)
 
 This gives your Library a normal `https://` web address that works from any computer or phone, all the time.
 It's hosted on [Render](https://render.com) and set up entirely by clicking.
@@ -54,7 +84,7 @@ arrow on MP4 Grabber in `chrome://extensions`.
 You can add your own domain in Render under **Settings → Custom Domains**. If you do, connect the extension to
 the new address afterwards.
 
-## Or run it on your own computer
+### On your own computer
 
 You need [Node.js 22.13 or newer](https://nodejs.org). There's nothing to install. From this folder, run:
 
@@ -83,7 +113,7 @@ reverse proxy such as Caddy and set `TRUST_PROXY=1`.
 | `VAPID_SUBJECT` | `mailto:owner@localhost` | Contact address push services may use. Set it to your email. |
 | `SESSION_DAYS` | `30` | How long you stay signed in |
 
-## Forgot your password?
+## Forgot your password? (self-hosted edition)
 
 Your password is what encrypts your history, so nobody can reset it from the website. On Render, open your
 service, go to the **Shell** tab and run the command below. On your own computer, run it in the project folder:
@@ -106,6 +136,11 @@ npm test
 npm run test:e2e
 ```
 
+- `npm run build-artifact` builds the artifact page into `dist/artifact/library.html`. It's published to the address above
+  by Claude's Artifact tool. To keep the same address, republish that file from the same place.
+- `npm run test:artifact` drives the real extension against the artifact page in a sandboxed cross-origin frame, using
+  a stand-in for the artifact runtime with a shared database and live channel. It pairs, downloads, then pauses and
+  resumes from a separate "phone" browser, and also tests send-to-computer, export and disconnecting.
 - `npm test` runs 44 unit and API tests: crypto, Web Push against the RFC 8291 test vector, sync, pairing, live relay and more.
 - `npm run test:e2e` drives the real extension in Chromium against a real server. It needs `ffmpeg` and Playwright. It encodes a test HLS stream, pairs the extension, downloads the stream while pausing and resuming it from the website, checks the saved file with ffprobe, and checks history is encrypted at rest. Add `--demo --screenshots <dir>` to capture every screen with sample data.
 - After changing anything in `shared/`, run `npm run sync-shared`. A test fails if `extension/lib/` falls out of date.

@@ -14,6 +14,8 @@
     "test": "node --disable-warning=ExperimentalWarning --test \"test/unit/*.test.js\" \"test/server/*.test.js\"",
     "test:e2e": "node --disable-warning=ExperimentalWarning test/e2e/run.js",
     "reset-password": "node --disable-warning=ExperimentalWarning server/cli.js reset-password",
-    "package-extension": "node scripts/package-extension.js"
+    "package-extension": "node scripts/package-extension.js",
+    "build-artifact": "node scripts/build-artifact.js",
+    "test:artifact": "node --disable-warning=ExperimentalWarning test/e2e/artifact-run.js"
   }
 }

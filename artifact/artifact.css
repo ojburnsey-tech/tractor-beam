@@ -1,0 +1,26 @@
+/* Artifact-only additions. The viewer's frame sets the theme on <html>, which
+   tokens.css already follows, and pads :root for the phone's safe areas. */
+
+body { background: var(--bg); }
+
+.page {
+  padding-left: max(40px, env(safe-area-inset-left, 0px));
+  padding-right: max(40px, env(safe-area-inset-right, 0px));
+}
+
+@media (max-width: 899px) {
+  .page {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+}
+
+.connect-card { margin-bottom: 12px; }
+.connect-body { display: grid; gap: 4px; }
+.connect-actions { margin-top: 8px; }
+.connect-actions .spinner { width: 14px; height: 14px; }
+.pair-code {
+  font: 600 32px/1.1 var(--font-display);
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+}

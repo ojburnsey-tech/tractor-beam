@@ -105,3 +105,24 @@ h1 {
 }
 .button-link.primary { background: var(--accent); color: var(--on-accent); }
 .button-link.primary:hover { background: var(--accent-hover); text-decoration: none; }
+
+.steps {
+  text-align: left;
+  margin: 20px auto 8px;
+  padding-left: 22px;
+  max-width: 340px;
+  color: var(--secondary);
+  font-size: 14px;
+  display: grid;
+  gap: 6px;
+}
+.steps strong { color: var(--label); font-weight: 600; }
+
+.large-link {
+  min-height: 40px;
+  padding: 8px 22px;
+  font-size: 15px;
+}
+
+.host { overflow-wrap: anywhere; margin: -10px 0 18px; }
+#pair .code { margin-bottom: 4px; }

@@ -83,7 +83,7 @@ export function openDetail(entry, { onClose }) {
       fact("Browser", deviceName(entry.deviceId)),
       fact("Started", dateTime(entry.startedAt)),
       fact("File name", entry.filename || null),
-      fact("Stored", entry.encrypted ? "Encrypted" : "Not encrypted"))));
+      fact("Stored", entry.encrypted === undefined ? null : entry.encrypted ? "Encrypted" : "Not encrypted"))));
 
   const sheetRef = {};
   const actions = [];

@@ -1,12 +1,18 @@
-// Connects this browser to a Library server. The flow is started here, in an
-// extension page, so a web page can never point the extension at its own
-// server. See docs/ARCHITECTURE.md, "Linking a browser".
+// MP4 Grabber's Library page: connect, approve a Library's pairing request,
+// see the connection, export history.
+//
+// An artifact Library (in Claude) asks to pair from its own page, which
+// opens this page with ?pair=<id>; nothing is linked until the person
+// approves here. A self-hosted Library is connected from this page, so a
+// web page can never point the extension at a server of its choosing.
 
 import { getAccount, saveLink, normalizeServer, api, ApiError } from "./account.js";
+import { history } from "./store.js";
 import { createPairingKeys, pairingCode, openKeyFromWeb, exportDataKey, randomId, sha256, toBase64Url } from "./lib/vault.js";
 
 const element = (id) => document.getElementById(id);
-const views = ["connect", "waiting", "connected"];
+const views = ["connect", "server", "pair", "waiting", "connected"];
+const params = new URL(location.href).searchParams;
 let polling = null;
 
 function show(view) {
@@ -28,53 +34,142 @@ function relative(timestamp) {
   if (!timestamp) return "Not yet";
   const seconds = Math.round((Date.now() - timestamp) / 1000);
   if (seconds < 60) return "Just now";
-  return new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }).format(-Math.round(seconds / 60), "minute");
+  const format = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  if (seconds < 3600) return format.format(-Math.round(seconds / 60), "minute");
+  if (seconds < 86400) return format.format(-Math.round(seconds / 3600), "hour");
+  return format.format(-Math.round(seconds / 86400), "day");
 }
+
+async function presetConfig() {
+  try {
+    return await (await fetch(chrome.runtime.getURL("config.json"))).json();
+  } catch {
+    return {};
+  }
+}
+
+/** The claude.ai address of the Library, if this browser knows it. */
+async function knownLibrary() {
+  const [config, stored] = await Promise.all([presetConfig(), chrome.storage.local.get(["lastLibrary"])]);
+  return config.library || stored.lastLibrary || "";
+}
+
+// ---------- export (the fallback when a Library can't connect) ----------
+
+async function exportHistory() {
+  const entries = (await history.all()).filter((entry) => !entry.localOnly).map(({ localOnly, ...entry }) => entry);
+  if (!entries.length) {
+    alert("There are no downloads to export yet.");
+    return;
+  }
+  const file = { format: "mp4-grabber-history", version: 1, exportedAt: new Date().toISOString(), entries };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(file)], { type: "application/json" }));
+  try {
+    await chrome.downloads.download({ url, filename: `mp4-grabber-history-${new Date().toISOString().slice(0, 10)}.json`, saveAs: true });
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+}
+
+// ---------- views ----------
 
 async function renderConnected() {
   const account = await getAccount();
   if (!account) return renderConnect();
   show("connected");
-  element("connected-detail").textContent = "Downloads from this browser are saved to your Library.";
-  element("summary-server").textContent = account.server.replace(/^https?:\/\//, "");
-  element("summary-email").textContent = account.email;
+  const artifact = account.mode === "artifact";
+  element("connected-detail").textContent = artifact
+    ? "Downloads from this browser are saved to your Library whenever it's open in a tab here. Downloads made while it's closed wait and arrive the next time you open it."
+    : "Downloads from this browser are saved to your Library.";
+  element("summary-server").textContent = artifact ? "In Claude" : account.server.replace(/^https?:\/\//, "");
+  element("summary-email-row").hidden = artifact;
+  element("summary-email").textContent = account.email || "";
   element("summary-name").textContent = account.name;
   element("summary-sync").textContent = relative(account.lastSync);
-  element("sync-error").textContent = account.status !== "ok" ? account.message : "";
-  element("open-library").href = `${account.server}/library`;
+  const pending = (await chrome.runtime.sendMessage({ type: "popup-state" }))?.pending || 0;
+  element("summary-pending").textContent = pending ? `${pending} download${pending === 1 ? "" : "s"}` : "Nothing";
+  element("sync-error").textContent = account.status === "error" || account.status === "offline" ? account.message : "";
+  const link = element("open-library");
+  const address = artifact ? account.library : `${account.server}/library`;
+  link.hidden = !address;
+  if (address) link.href = address;
 }
 
 async function renderConnect(message = "") {
   show("connect");
-  const stored = await chrome.storage.local.get(["lastServer", "disconnected"]);
-  const fromQuery = new URL(location.href).searchParams.get("server");
-  // Set when the extension was downloaded from a Library (see server/routes/extension.js).
-  const preset = await fetch(chrome.runtime.getURL("config.json")).then((response) => response.json()).then((config) => config.server || "").catch(() => "");
-  element("local-hint").hidden = Boolean(preset);
-  if (!element("server").value) element("server").value = fromQuery || preset || stored.lastServer || "http://localhost:4321";
-  if (!element("name").value) element("name").value = defaultName();
-  element("connect-error").textContent = message || (stored.disconnected?.reason === "revoked" ? "This browser was disconnected from your Library. Connect it again to keep syncing." : "");
+  const library = await knownLibrary();
+  const open = element("open-library-start");
+  open.hidden = !library;
+  if (library) open.href = library;
+  const stored = await chrome.storage.local.get("disconnected");
+  element("connect-error").textContent = message || (stored.disconnected?.reason === "revoked" ? "This browser was disconnected from your Library. Connect it again to keep saving downloads there." : "");
+  element("export-start").hidden = (await history.all()).length === 0;
 }
 
-async function connect(event) {
+async function renderServer(message = "") {
+  show("server");
+  const stored = await chrome.storage.local.get(["lastServer"]);
+  const config = await presetConfig();
+  element("local-hint").hidden = Boolean(config.server);
+  if (!element("server-address").value) element("server-address").value = params.get("server") || config.server || stored.lastServer || "http://localhost:4321";
+  if (!element("name").value) element("name").value = defaultName();
+  element("server-error").textContent = message;
+}
+
+async function renderPair(id) {
+  const result = await chrome.runtime.sendMessage({ type: "pair-info", id });
+  if (!result?.info) {
+    renderConnect("That connection request has expired. In your Library, choose Connect This Browser again.");
+    return;
+  }
+  show("pair");
+  element("pair-code").textContent = result.info.code;
+  element("pair-host").textContent = `Requested by ${result.info.library || new URL(result.info.origin).host}`;
+  if (!element("pair-name").value) element("pair-name").value = defaultName();
+  element("pair-name").focus();
+}
+
+// ---------- pairing with an artifact Library ----------
+
+element("pair-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = element("pair-confirm");
+  button.disabled = true;
+  element("pair-error").textContent = "";
+  const result = await chrome.runtime.sendMessage({ type: "pair-confirm", id: params.get("pair"), name: element("pair-name").value, browser: browserDescription() });
+  button.disabled = false;
+  if (!result?.ok) {
+    element("pair-error").textContent = result?.error || "The connection couldn't be completed.";
+    return;
+  }
+  window.history.replaceState(null, "", "link.html");
+  renderConnected();
+});
+
+element("pair-decline").addEventListener("click", async () => {
+  await chrome.runtime.sendMessage({ type: "pair-decline", id: params.get("pair") });
+  window.close();
+});
+
+// ---------- connecting to a self-hosted Library ----------
+
+async function connectServer(event) {
   event.preventDefault();
   const button = element("connect-button");
-  element("connect-error").textContent = "";
+  element("server-error").textContent = "";
   let server;
   try {
-    server = normalizeServer(element("server").value);
+    server = normalizeServer(element("server-address").value);
   } catch (error) {
-    element("connect-error").textContent = error.message;
+    element("server-error").textContent = error.message;
     return;
   }
   const name = element("name").value.trim() || defaultName();
   button.disabled = true;
   button.textContent = "Connecting…";
   try {
-    // Check this really is a Library before registering.
     const { json: state } = await api("/api/auth/state", { server, token: null });
     if (typeof state.signupOpen !== "boolean") throw new Error("That address doesn't look like an MP4 Grabber Library.");
-
     const keys = await createPairingKeys();
     const id = randomId(16);
     const secret = randomId(32);
@@ -91,7 +186,7 @@ async function connect(event) {
     element("reopen").onclick = () => chrome.tabs.create({ url: approveUrl });
     await waitForApproval({ server, id, secret, keys, name, tabId: tab.id });
   } catch (error) {
-    if (error.name !== "AbortError") renderConnect(error.message);
+    if (error.name !== "AbortError") renderServer(error.message);
   } finally {
     button.disabled = false;
     button.textContent = "Continue";
@@ -138,11 +233,15 @@ function sleep(milliseconds, signal) {
   });
 }
 
-element("connect-form").addEventListener("submit", connect);
+element("connect-form").addEventListener("submit", connectServer);
+element("use-server").addEventListener("click", () => renderServer());
+element("server-back").addEventListener("click", () => renderConnect());
 element("cancel").addEventListener("click", () => {
   polling?.abort();
-  renderConnect();
+  renderServer();
 });
+element("export").addEventListener("click", exportHistory);
+element("export-start").addEventListener("click", exportHistory);
 element("sync").addEventListener("click", async () => {
   const button = element("sync");
   button.disabled = true;
@@ -162,5 +261,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.account && !element("connected").hidden) renderConnected();
 });
 
-if (await getAccount()) renderConnected();
+if (params.get("pair")) renderPair(params.get("pair"));
+else if (await getAccount()) renderConnected();
+else if (params.get("server") || (await presetConfig()).server) renderServer();
 else renderConnect();

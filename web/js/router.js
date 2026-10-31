@@ -33,6 +33,11 @@ export function navigate(path, { replace = false } = {}) {
   listener();
 }
 
+/** Steps back one entry (closing a sheet that was opened from a list). */
+export function back() {
+  history.back();
+}
+
 export function startRouter(onChange) {
   listener = onChange;
   window.addEventListener("popstate", () => listener());

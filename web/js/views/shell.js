@@ -4,6 +4,7 @@
 import { h } from "../dom.js";
 import { icon } from "../icons.js";
 import { state, on, bridge } from "../store.js";
+import { LOGO_URL } from "../assets.js";
 
 const NAV = [
   { name: "library", href: "/library", label: "Library", icon: "library" },
@@ -27,7 +28,7 @@ export function createShell(root) {
   const email = h("span", { class: "account-email truncate" });
   const connection = h("span", { class: "connection" });
   const sidebar = h("aside", { class: "sidebar" },
-    h("a", { class: "brand", href: "/library" }, h("img", { src: "/icons/logo.svg", alt: "", width: 30, height: 30 }), h("span", {}, "MP4 Grabber")),
+    h("a", { class: "brand", href: "/library" }, h("img", { src: LOGO_URL, alt: "", width: 30, height: 30 }), h("span", {}, "MP4 Grabber")),
     h("nav", { class: "nav", "aria-label": "Main" }, NAV.map((item) => makeLink(item, true))),
     h("div", { class: "sidebar-footer" }, email, connection));
   const tabbar = h("nav", { class: "tabbar", "aria-label": "Main" }, NAV.map((item) => makeLink(item, false)));

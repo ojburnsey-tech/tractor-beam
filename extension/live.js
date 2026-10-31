@@ -12,10 +12,15 @@ const LINGER_MS = 6000; // finished jobs stay visible briefly so they can be see
 
 const jobs = new Map();      // jobId → snapshot (plaintext, local only)
 const ended = new Set();     // jobIds to tell the server about
-const ports = new Set();     // accepted website bridges
 const controllers = new Map(); // jobId → { pause, resume, cancel, stop }
 let timer = null;
 let broadcastTimer = null;
+let broadcaster = () => {};
+
+/** bridge-host.js supplies the function that reaches open Library pages. */
+export function setBroadcaster(send) {
+  broadcaster = send;
+}
 
 export function registerController(jobId, controller) {
   controllers.set(jobId, controller);
@@ -66,10 +71,7 @@ function scheduleBroadcast() {
   if (broadcastTimer) return;
   broadcastTimer = setTimeout(() => {
     broadcastTimer = null;
-    const message = { type: "live", jobs: list().map(publicJob) };
-    for (const port of ports) {
-      try { port.postMessage(message); } catch { ports.delete(port); }
-    }
+    broadcaster({ type: "live", jobs: list().map(publicJob) });
   }, 100);
 }
 
@@ -87,6 +89,11 @@ async function tick() {
   }
   const account = await getAccount();
   if (!account) return;
+  if (account.mode === "artifact") {
+    // An artifact Library relays live progress itself, through its room.
+    ended.clear();
+    return;
+  }
   try {
     const prefs = await settings();
     const key = await dataKey();
@@ -126,32 +133,6 @@ async function tick() {
   }
 }
 
-/**
- * A website tab asks to connect through bridge.js. Only the top frame of the
- * linked Library's origin is accepted; anything else is disconnected without
- * a reply, so other sites can't detect the extension.
- */
-export async function acceptBridge(port) {
-  const queue = [];
-  const early = (message) => queue.push(message);
-  port.onMessage.addListener(early);
-  const account = await getAccount();
-  let origin = "";
-  try { origin = new URL(port.sender?.url || "").origin; } catch {}
-  const allowed = account && port.sender?.frameId === 0 && (port.sender.origin || origin) === account.server;
-  if (!allowed) {
-    port.disconnect();
-    return null;
-  }
-  port.onMessage.removeListener(early);
-  ports.add(port);
-  port.onDisconnect.addListener(() => ports.delete(port));
-  port.postMessage({
-    type: "hello",
-    deviceId: account.deviceId,
-    version: chrome.runtime.getManifest().version,
-    email: account.email,
-    jobs: list().map(publicJob)
-  });
-  return { port, queue };
+export function snapshot() {
+  return list().map(publicJob);
 }

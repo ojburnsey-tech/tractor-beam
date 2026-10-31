@@ -3,7 +3,7 @@
 import { h, debounce } from "../dom.js";
 import { icon, kindIcon } from "../icons.js";
 import { state, on } from "../store.js";
-import { navigate } from "../router.js";
+import { navigate, back } from "../router.js";
 import { emptyState } from "../ui/controls.js";
 import { pageHeader } from "./shell.js";
 import { openDetail } from "./detail.js";
@@ -157,7 +157,7 @@ export function mount(container, params, shell) {
     detail = openDetail(entry, {
       onClose: () => {
         detail = null;
-        if (detailFromList) history.back();
+        if (detailFromList) back();
         else navigate("/library", { replace: true });
         detailFromList = false;
       }

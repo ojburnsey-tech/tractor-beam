@@ -13,6 +13,41 @@ The system is three parts that share one data model:
 | **Website** | `web/` | Sign-in, Library, Active, Insights, Send, Settings. Framework-free ES modules served by the server. Installable as a PWA for phone notifications. |
 | **Shared** | `shared/` | Code both sides must agree on: crypto (`vault.js`), error explanations, filename templates, privacy rules, formatting, smart concurrency. Copied into `extension/lib/` by `npm run sync-shared`; a test fails if the copies drift. |
 
+## Artifact edition
+
+The Library can also run as a claude.ai artifact (`artifact/`, built by
+`scripts/build-artifact.js` into one self-contained page). It reuses the
+website's views; four modules are swapped: `store.js`, `bridge.js`,
+`router.js` (hash routes, because artifacts only keep `#name`) and the
+Settings view.
+
+* **Storage:** the artifact's `db`, under the viewer's private
+  `data/users/<id>/` subtree: `prefs`, `library/downloads/*`,
+  `library/devices/*`, `library/inbox/*`. Sign-in is the person's Claude
+  account. There is no password-derived encryption in this edition; the
+  private subtree is enforced by the platform.
+* **Extension link:** an artifact can't be called from the internet, so
+  the extension talks to the open Library page through `bridge.js`. The
+  content script runs in all frames, because the artifact is framed inside
+  claude.ai, sandboxed with an opaque origin. Pairing starts from the page
+  ("Connect This Browser"). The extension opens its own confirmation tab
+  showing a code that the page also shows, and links only after the person
+  approves. Pending pairings survive service-worker restarts
+  (`chrome.storage.session`). Once linked, the extension accepts only the
+  artifact's origin.
+* **Sync:** the extension sends outbox entries in batches; the page writes
+  each to `db` and acknowledges by batch id before the extension removes
+  them. Settings, links sent to the computer, deletions and disconnects
+  flow back over the same bridge. Entries wait in the outbox while the
+  Library is closed.
+* **Live view and remote control:** the Library page on the downloading
+  computer relays its jobs over the artifact's `room` (messages are capped
+  at 4 KB, so up to three jobs with 48 s of speed history, in KB/s). Other
+  open Libraries (a phone) render them and send `command` messages back,
+  which the relaying page hands to the extension.
+* **Not available:** Web Push (artifacts can't register service workers)
+  and syncing while no Library tab is open.
+
 ## Hard rules
 
 1. **No credentials ever leave the extension.** Authorization headers, cookies,

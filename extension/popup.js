@@ -155,6 +155,13 @@ function renderActive(jobs) {
 
 // ---------- account, sent links, recent history ----------
 
+/** Where "Open Library" goes: the artifact's claude.ai page, or the server. */
+function libraryAddress(account) {
+  if (!account) return "";
+  if (account.mode === "artifact") return account.library || "";
+  return `${account.server}/library`;
+}
+
 function renderAccount() {
   const button = document.getElementById("account");
   button.hidden = false;
@@ -170,8 +177,8 @@ function renderAccount() {
     button.title = state.disconnected?.reason === "revoked" ? "This browser was disconnected from your Library." : "Keep a history of your downloads in your Library.";
   } else {
     if (account.status !== "ok") button.classList.add("warn");
-    label.textContent = account.status === "offline" ? "Library offline" : account.status === "error" ? "Sync paused" : "Library";
-    button.title = account.message || `Connected to ${account.server} as ${account.email}`;
+    label.textContent = { offline: "Library offline", error: "Sync paused", waiting: "Open Library" }[account.status] || "Library";
+    button.title = account.message || (account.mode === "artifact" ? "Connected to your Library in Claude" : `Connected to ${account.server} as ${account.email}`);
   }
   button.append(dot, label);
   button.onclick = () => {
@@ -180,8 +187,13 @@ function renderAccount() {
   };
 
   const link = document.getElementById("library-link");
-  link.hidden = !account;
-  if (account) link.href = `${account.server}/library`;
+  const libraryUrl = libraryAddress(account);
+  link.hidden = !libraryUrl;
+  if (libraryUrl) {
+    link.href = libraryUrl;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+  }
   const sync = document.getElementById("sync-state");
   sync.textContent = account && state.pending ? `${state.pending} waiting to sync` : "";
 }
@@ -221,11 +233,12 @@ function renderInbox() {
 function renderRecent() {
   const container = document.getElementById("recent");
   container.replaceChildren(...state.recent.map((entry) => {
-    const linkable = state.account && !entry.localOnly;
+    const base = libraryAddress(state.account);
+    const linkable = base && !entry.localOnly;
     const row = document.createElement(linkable ? "a" : "div");
     row.className = `row${linkable ? " clickable" : ""}`;
     if (linkable) {
-      row.href = `${state.account.server}/library/${entry.id}`;
+      row.href = state.account.mode === "artifact" ? `${base}#d-${entry.id}` : `${state.account.server}/library/${entry.id}`;
       row.target = "_blank";
       row.rel = "noreferrer";
     }

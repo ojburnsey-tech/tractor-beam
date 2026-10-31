@@ -122,7 +122,8 @@ try {
   const linkPage = await context.newPage();
   watchErrors(linkPage, "extension link page");
   await linkPage.goto(ext("link.html"));
-  await linkPage.fill("#server", base);
+  await linkPage.click("#use-server");
+  await linkPage.fill("#server-address", base);
   const approvalPagePromise = context.waitForEvent("page", (page) => page.url().startsWith(`${base}/link`));
   await linkPage.click("#connect-button");
   const extensionCode = await until(async () => (await linkPage.textContent("#code"))?.trim(), { label: "pairing code" });

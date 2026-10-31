@@ -78,6 +78,36 @@ export async function saveLink({ server, token, deviceId, email, name, dataKeyRa
   });
 }
 
+/**
+ * Links this browser to a Library that lives in a claude.ai artifact. There
+ * is no token: the artifact page itself is the other end, reached through
+ * the bridge while it's open.
+ */
+export async function saveArtifactLink({ origin, library, deviceId, name, browser }) {
+  await secrets.clear();
+  cachedKey = null;
+  cachedRaw = null;
+  await chrome.storage.local.set({
+    [KEY]: {
+      mode: "artifact",
+      origin,
+      library: library || "",
+      deviceId,
+      name,
+      browser: browser || "",
+      email: "",
+      linkedAt: Date.now(),
+      settings: { ...DEFAULT_SETTINGS },
+      cursor: 0,
+      lastSync: 0,
+      status: "ok",
+      message: ""
+    },
+    lastLibrary: library || ""
+  });
+  await chrome.storage.local.remove("disconnected");
+}
+
 /** Forgets the connection. `reason` is shown in the popup when not "user". */
 export async function clearAccount(reason = "user") {
   await secrets.clear();

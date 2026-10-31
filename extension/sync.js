@@ -1,11 +1,19 @@
-// Background sync: local history → server, settings and links ← server.
-// Runs on change, every minute (chrome.alarms) and when the popup opens.
-// Failures leave entries in the outbox; nothing is lost while offline.
+// Background sync between this browser's history and the Library.
+//
+// Two kinds of Library:
+//  • artifact (claude.ai): entries travel over the bridge to the Library page
+//    while it's open in this browser; the page saves them and confirms.
+//    Settings, sent links and deletions come back the same way.
+//  • self-hosted server: entries are sealed and pushed over HTTPS; settings
+//    and links are pulled.
+// Runs on change, every minute (chrome.alarms), when the popup opens and
+// when the Library page connects. Failures leave entries in the outbox.
 
 import { history, outbox, inbox } from "./store.js";
-import { getAccount, updateAccount, settings, dataKey, api, ApiError } from "./account.js";
+import { getAccount, updateAccount, settings, dataKey, api, ApiError, DEFAULT_SETTINGS } from "./account.js";
 import { seal, open } from "./lib/vault.js";
 import { hostMatches } from "./lib/privacy.js";
+import * as bridgeHost from "./bridge-host.js";
 
 const BATCH = 50;
 const PRIVATE_FIELDS = ["title", "site", "pageUrl", "filename", "mediaHost", "errorMessage"];
@@ -34,6 +42,85 @@ export async function record(entry, { incognito = false } = {}) {
   return { stored: true, localOnly };
 }
 
+/** Next batch of entries that may leave this computer; drops the rest from the outbox. */
+async function nextBatch(prefs) {
+  const ids = (await outbox.ids()).slice(0, BATCH);
+  const entries = [];
+  const skip = [];
+  for (const id of ids) {
+    const entry = await history.get(id);
+    if (!entry || entry.localOnly || hostMatches(entry.site, prefs.neverSync)) skip.push(id);
+    else entries.push(entry);
+  }
+  if (skip.length) await outbox.remove(skip);
+  return { ids, entries };
+}
+
+// ---------- links sent to this computer (both kinds of Library) ----------
+
+/**
+ * Takes the current list of links waiting for this browser. New ones are
+ * stored and announced; ones no longer listed (opened elsewhere, removed)
+ * are forgotten.
+ */
+export async function receiveInbox(items) {
+  const known = new Map((await inbox.all()).map((item) => [item.id, item]));
+  const fresh = [];
+  for (const raw of items) {
+    const id = String(raw?.id || "");
+    if (!id) continue;
+    if (known.has(id)) {
+      known.delete(id);
+      continue;
+    }
+    let url = "";
+    try { url = new URL(String(raw.url || "")).href; } catch { continue; }
+    if (!/^https?:/.test(url)) continue;
+    const stored = { id, url, note: String(raw.note || "").slice(0, 80), createdAt: Number(raw.createdAt) || Date.now() };
+    await inbox.put(stored);
+    fresh.push(stored);
+  }
+  if (known.size) await inbox.remove([...known.keys()]);
+  if (fresh.length) announce(fresh);
+  return fresh;
+}
+
+export async function receiveSettings(next) {
+  const clean = { ...DEFAULT_SETTINGS };
+  for (const key of Object.keys(DEFAULT_SETTINGS)) if (next[key] !== undefined) clean[key] = next[key];
+  if (!Array.isArray(clean.neverSync)) clean.neverSync = [];
+  await updateAccount({ settings: clean });
+}
+
+// ---------- artifact Library ----------
+
+async function syncArtifact(account) {
+  const waiting = (await outbox.ids()).length;
+  if (!bridgeHost.libraryConnected()) {
+    await updateAccount({ status: waiting ? "waiting" : "ok", message: waiting ? "Open your Library to save the downloads waiting here." : "" });
+    return { ok: true, waiting: true };
+  }
+  const prefs = await settings();
+  while (true) {
+    const { ids, entries } = await nextBatch(prefs);
+    if (!ids.length) break;
+    if (!entries.length) continue;
+    const payload = entries.map(({ localOnly, ...entry }) => entry);
+    const saved = await bridgeHost.sendEntries(payload);
+    if (!saved.length) throw new Error("Your Library couldn't save these downloads.");
+    await outbox.remove(saved);
+  }
+  // Report links opened or dismissed here so the Library marks them.
+  for (const item of await inbox.all()) {
+    if (item.opened) bridgeHost.broadcast({ type: "inbox-opened", id: item.id });
+    if (item.dismissed) bridgeHost.broadcast({ type: "inbox-dismissed", id: item.id });
+  }
+  await updateAccount({ lastSync: Date.now(), status: "ok", message: "" });
+  return { ok: true };
+}
+
+// ---------- self-hosted Library ----------
+
 async function toWire(entry, key, encrypt) {
   const wire = {};
   for (const field of PUBLIC_FIELDS) if (entry[field] !== undefined) wire[field] = entry[field];
@@ -45,57 +132,46 @@ async function toWire(entry, key, encrypt) {
   return wire;
 }
 
-async function push() {
+async function pushToServer() {
   const prefs = await settings();
   const key = await dataKey();
   if (prefs.encryptHistory && !key) throw new ApiError("This browser is missing the encryption key. Connect it again.", 0, "no-key");
   while (true) {
-    const ids = (await outbox.ids()).slice(0, BATCH);
+    const { ids, entries } = await nextBatch(prefs);
     if (!ids.length) return;
-    const entries = [];
-    const missing = [];
-    for (const id of ids) {
-      const entry = await history.get(id);
-      if (!entry || entry.localOnly || hostMatches(entry.site, prefs.neverSync)) missing.push(id);
-      else entries.push(await toWire(entry, key, prefs.encryptHistory));
-    }
-    if (missing.length) await outbox.remove(missing);
     if (!entries.length) continue;
-    const { json } = await api("/api/sync/push", { method: "POST", body: { entries } });
+    const wire = await Promise.all(entries.map((entry) => toWire(entry, key, prefs.encryptHistory)));
+    const { json } = await api("/api/sync/push", { method: "POST", body: { entries: wire } });
     // Rejected entries are malformed; retrying would loop forever.
     await outbox.remove([...json.accepted, ...json.rejected.map((item) => item.id).filter(Boolean)]);
   }
 }
 
-async function pull() {
-  const account = await getAccount();
+async function pullFromServer(account) {
   const { json } = await api(`/api/sync/pull?since=${account.cursor || 0}`);
   if (json.deleted.length) await history.remove(json.deleted);
-
   const key = await dataKey();
-  const known = new Map((await inbox.all()).map((item) => [item.id, item]));
-  const fresh = [];
+  const items = [];
   for (const item of json.inbox) {
-    if (known.has(item.id)) {
-      known.delete(item.id);
-      continue;
-    }
     try {
       const data = await open(item.sealed, { key, aad: item.id });
-      const stored = { id: item.id, url: String(data.url || ""), note: String(data.note || ""), createdAt: item.createdAt };
-      await inbox.put(stored);
-      fresh.push(stored);
+      items.push({ id: item.id, url: data.url, note: data.note, createdAt: item.createdAt });
     } catch {
       // Unreadable (e.g. sealed with an older key): skip rather than block sync.
     }
   }
-  // Anything left was opened elsewhere or removed on the website.
-  if (known.size) await inbox.remove([...known.keys()]);
+  await receiveInbox(items);
   await updateAccount({ settings: json.settings, cursor: json.cursor, name: json.deviceName || account.name });
-  return fresh;
 }
 
-/** Pulls then pushes. Concurrent calls share one run. */
+async function syncServer(account) {
+  await pullFromServer(account);
+  await pushToServer();
+  await updateAccount({ lastSync: Date.now(), status: "ok", message: "" });
+  return { ok: true };
+}
+
+/** Syncs with whichever Library this browser is linked to. Concurrent calls share one run. */
 export function syncNow({ force = false } = {}) {
   if (running) return running;
   if (!force && Date.now() < backoffUntil) return Promise.resolve({ skipped: true });
@@ -103,17 +179,14 @@ export function syncNow({ force = false } = {}) {
     const account = await getAccount();
     if (!account) return { skipped: true };
     try {
-      const fresh = await pull();
-      await push();
+      const result = account.mode === "artifact" ? await syncArtifact(account) : await syncServer(account);
       failures = 0;
       backoffUntil = 0;
-      await updateAccount({ lastSync: Date.now(), status: "ok", message: "" });
-      if (fresh.length) await announce(fresh);
-      return { ok: true, fresh };
+      return result;
     } catch (error) {
       failures += 1;
       backoffUntil = Date.now() + Math.min(30000 * 2 ** (failures - 1), 15 * 60000);
-      if (error.code !== "device-revoked") {
+      if (error.code !== "device-revoked" && await getAccount()) {
         await updateAccount({ status: error.code === "offline" ? "offline" : "error", message: error.message });
       }
       return { ok: false, error: error.message };
@@ -130,7 +203,7 @@ export function syncSoon(delay = 1500) {
   soon = setTimeout(() => syncNow({ force: true }), delay);
 }
 
-async function announce(items) {
+function announce(items) {
   const iconUrl = chrome.runtime.getURL("icons/icon128.png");
   for (const item of items.slice(0, 3)) {
     let host = "";

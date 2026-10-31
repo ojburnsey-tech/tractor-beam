@@ -13,11 +13,27 @@
 
     <section id="connect" hidden>
       <h1>Connect to your Library</h1>
-      <p class="lead">Your Library keeps a history of every download, shows live progress on any device and syncs your preferences.</p>
+      <p class="lead">Your Library keeps every download, shows live progress on any device and syncs your preferences. It lives in Claude.</p>
+      <a id="open-library-start" class="button-link primary large-link" href="#" target="_blank" rel="noreferrer" hidden>Open Your Library</a>
+      <ol class="steps">
+        <li>Open your Library in this Chrome window.</li>
+        <li>Go to <strong>Settings</strong> and choose <strong>Connect This Browser</strong>.</li>
+        <li>Approve the request that appears here.</li>
+      </ol>
+      <p id="connect-error" class="error" role="alert"></p>
+      <div class="buttons">
+        <button id="export-start" type="button" hidden>Export History…</button>
+        <button id="use-server" class="plain" type="button">Use a Self-Hosted Library…</button>
+      </div>
+    </section>
+
+    <section id="server" hidden>
+      <h1>Self-hosted Library</h1>
+      <p class="lead">Connect to a Library server you run yourself.</p>
       <form id="connect-form" class="group form">
         <label class="field">
           <span class="field-label">Library address</span>
-          <input id="server" type="text" inputmode="url" autocomplete="url" spellcheck="false" required placeholder="https://library.example.com">
+          <input id="server-address" type="text" inputmode="url" autocomplete="url" spellcheck="false" required placeholder="https://library.example.com">
         </label>
         <label class="field">
           <span class="field-label">This browser's name</span>
@@ -25,8 +41,28 @@
         </label>
       </form>
       <p class="footnote" id="local-hint">Running the Library on this computer? Its address is usually http://localhost:4321.</p>
-      <p id="connect-error" class="error" role="alert"></p>
+      <p id="server-error" class="error" role="alert"></p>
       <button id="connect-button" class="primary large wide" type="submit" form="connect-form">Continue</button>
+      <div class="buttons"><button id="server-back" class="plain" type="button">Back</button></div>
+    </section>
+
+    <section id="pair" hidden>
+      <h1>Connect to your Library?</h1>
+      <p class="lead">Your Library wants MP4 Grabber in this browser to save its downloads there.</p>
+      <p class="code tabular" id="pair-code" aria-label="Pairing code"></p>
+      <p class="footnote center">Only continue if your Library shows this same code.</p>
+      <p class="host footnote center" id="pair-host"></p>
+      <form id="pair-form" class="group form">
+        <label class="field">
+          <span class="field-label">This browser's name</span>
+          <input id="pair-name" type="text" maxlength="60" required>
+        </label>
+      </form>
+      <p id="pair-error" class="error" role="alert"></p>
+      <div class="buttons">
+        <button id="pair-decline" class="large" type="button">Don't Connect</button>
+        <button id="pair-confirm" class="primary large" type="submit" form="pair-form">Connect</button>
+      </div>
     </section>
 
     <section id="waiting" hidden>
@@ -45,14 +81,16 @@
       <p class="lead" id="connected-detail"></p>
       <div class="group summary">
         <div class="summary-row"><span>Library</span><span id="summary-server" class="value"></span></div>
-        <div class="summary-row"><span>Account</span><span id="summary-email" class="value"></span></div>
+        <div class="summary-row" id="summary-email-row"><span>Account</span><span id="summary-email" class="value"></span></div>
         <div class="summary-row"><span>This browser</span><span id="summary-name" class="value"></span></div>
         <div class="summary-row"><span>Last synced</span><span id="summary-sync" class="value"></span></div>
+        <div class="summary-row"><span>Waiting to sync</span><span id="summary-pending" class="value"></span></div>
       </div>
       <p id="sync-error" class="error" role="alert"></p>
       <div class="buttons">
         <a id="open-library" class="button-link primary" href="#" target="_blank" rel="noreferrer">Open Library</a>
         <button id="sync" type="button">Sync Now</button>
+        <button id="export" type="button">Export History…</button>
         <button id="disconnect" class="plain destructive" type="button">Disconnect…</button>
       </div>
       <p class="footnote center">Incognito downloads are never saved. Sites you exclude in the Library stay on this computer.</p>

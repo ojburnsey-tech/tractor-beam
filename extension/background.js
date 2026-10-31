@@ -1,7 +1,8 @@
 import { mediaKind, safeUrl, filenameFor, filenameWithExtension } from "./shared.js";
 import { history, outbox, inbox as inboxStore } from "./store.js";
-import { settings as accountSettings, clearAccount, api } from "./account.js";
-import { record, syncNow, pendingCount } from "./sync.js";
+import { getAccount, settings as accountSettings, clearAccount, api } from "./account.js";
+import { record, syncNow, syncSoon, pendingCount, receiveInbox, receiveSettings } from "./sync.js";
+import * as bridgeHost from "./bridge-host.js";
 import * as live from "./live.js";
 import { SpeedRecorder } from "./recorder.js";
 import { recommendConcurrency } from "./lib/concurrency.js";
@@ -361,10 +362,20 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       return { ok: true };
     }
     if (message.type === "unlink") {
-      await api("/api/device/me", { method: "DELETE" }).catch(() => {});
-      await clearAccount("user");
-      await outbox.clear();
-      await inboxStore.clear();
+      const account = await getAccount();
+      if (account?.mode === "artifact") bridgeHost.broadcast({ type: "unlinked", deviceId: account.deviceId });
+      else await api("/api/device/me", { method: "DELETE" }).catch(() => {});
+      await forgetLibrary("user");
+      return { ok: true };
+    }
+    if (message.type === "pair-info") return { ok: true, info: await bridgeHost.pairingInfo(String(message.id)) };
+    if (message.type === "pair-confirm") {
+      const name = String(message.name || "").trim().slice(0, 60) || "Chrome";
+      await bridgeHost.confirmPairing(String(message.id), { name, browser: String(message.browser || "").slice(0, 120) });
+      return { ok: true };
+    }
+    if (message.type === "pair-decline") {
+      bridgeHost.declinePairing(String(message.id));
       return { ok: true };
     }
     return { ok: false, error: "Unknown request." };
@@ -451,7 +462,7 @@ async function popupState() {
     lastServer: stored.lastServer || "",
     pending: await pendingCount(),
     recent: await history.recent(4),
-    inbox: (await inboxStore.all()).sort((a, b) => b.createdAt - a.createdAt)
+    inbox: (await inboxStore.all()).filter((item) => !item.opened && !item.dismissed).sort((a, b) => b.createdAt - a.createdAt)
   };
 }
 
@@ -463,12 +474,24 @@ async function openInbox(id) {
   const url = safeUrl(item.url);
   const target = PLAYABLE.includes(mediaKind(url)) ? chrome.runtime.getURL(`download.html?url=${encodeURIComponent(url)}`) : url;
   await chrome.tabs.create({ url: target });
-  await inboxStore.remove([id]);
-  api(`/api/inbox/${encodeURIComponent(id)}/opened`, { method: "POST" }).catch(() => {});
+  if ((await getAccount())?.mode === "artifact") {
+    // Kept (marked) until the Library confirms, so it isn't announced again.
+    await inboxStore.put({ ...item, opened: true });
+    bridgeHost.broadcast({ type: "inbox-opened", id });
+  } else {
+    await inboxStore.remove([id]);
+    api(`/api/inbox/${encodeURIComponent(id)}/opened`, { method: "POST" }).catch(() => {});
+  }
   return { ok: true };
 }
 
 async function dismissInbox(id) {
+  if ((await getAccount())?.mode === "artifact") {
+    const item = await inboxStore.get(id);
+    if (item) await inboxStore.put({ ...item, dismissed: true });
+    bridgeHost.broadcast({ type: "inbox-dismissed", id });
+    return { ok: true };
+  }
   await inboxStore.remove([id]);
   await api(`/api/inbox/${encodeURIComponent(id)}/dismissed`, { method: "POST" }).catch(() => {});
   return { ok: true };
@@ -598,23 +621,28 @@ async function finishNative(id) {
   }, { incognito: native.incognito });
 }
 
-// The website talks to the extension through bridge.js when it is open in
-// this browser (instant live progress and controls).
-chrome.runtime.onConnect.addListener((port) => {
-  if (port.name !== "web-bridge") return;
-  live.acceptBridge(port).then((accepted) => {
-    if (!accepted) return;
-    const handle = (message) => {
-      if (message?.type === "command" && ["pause", "resume", "cancel", "stop"].includes(message.action)) {
-        live.dispatch(String(message.jobId), message.action);
-      } else if (message?.type === "sync-now") {
-        syncNow({ force: true }).catch(() => {});
-      }
-    };
-    accepted.queue.forEach(handle);
-    port.onMessage.addListener(handle);
-  }).catch(() => port.disconnect());
+// The Library page talks to the extension through bridge.js when it is open
+// in this browser: live progress, controls, and (for an artifact Library)
+// history, settings and sent links.
+async function forgetLibrary(reason) {
+  bridgeHost.disconnectAll();
+  await clearAccount(reason);
+  await outbox.clear();
+  await inboxStore.clear();
+}
+
+live.setBroadcaster(bridgeHost.broadcast);
+bridgeHost.setJobsSource(() => live.snapshot());
+bridgeHost.setHandlers({
+  command: (jobId, action) => live.dispatch(jobId, action),
+  syncNow: () => syncNow({ force: true }).catch(() => {}),
+  connected: () => syncSoon(300),
+  settings: (next) => receiveSettings(next).catch(() => {}),
+  inbox: (items) => receiveInbox(items).catch(() => {}),
+  deleted: (ids) => history.remove(ids).catch(() => {}),
+  unlink: () => forgetLibrary("revoked").catch(() => {})
 });
+chrome.runtime.onConnect.addListener((port) => bridgeHost.handleConnect(port));
 
 // Sync every minute, and whenever the browser starts.
 chrome.alarms.get("sync").then((alarm) => {
