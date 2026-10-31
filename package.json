@@ -1,0 +1,19 @@
+{
+  "name": "mp4-grabber-library",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal download library, live progress and insights for the MP4 Grabber Chrome extension.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch-path=server server/index.js",
+    "sync-shared": "node scripts/sync-shared.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/unit/*.test.js\" \"test/server/*.test.js\"",
+    "test:e2e": "node --disable-warning=ExperimentalWarning test/e2e/run.js",
+    "reset-password": "node --disable-warning=ExperimentalWarning server/cli.js reset-password",
+    "package-extension": "node scripts/package-extension.js"
+  }
+}

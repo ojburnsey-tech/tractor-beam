@@ -1,0 +1,6 @@
+node_modules/
+data/
+*.sqlite*
+test-results/
+.DS_Store
+dist/
