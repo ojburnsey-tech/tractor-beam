@@ -3,63 +3,110 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MP4 Grabber · Download</title>
-  <link rel="stylesheet" href="popup.css">
+  <title>Download · MP4 Grabber</title>
+  <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="download.css">
 </head>
-<body class="ready">
-  <main class="download-shell">
+<body data-state="ready">
+  <main class="page">
     <header class="top">
-      <img class="logo" src="icons/logo.svg" alt="">
+      <img class="logo" src="icons/logo.svg" alt="" width="44" height="44">
       <div>
-        <h1>MP4 Grabber</h1>
-        <p class="summary">Complete video. Sound included.</p>
+        <h1>Download</h1>
+        <p class="subtitle">Saves the complete video with sound, written straight to disk.</p>
       </div>
-      <span class="version">2.0</span>
     </header>
-    <section class="panel">
-      <h2>Save the whole stream</h2>
-      <p class="intro">Choose a source, check its tracks, then save one media file. Long videos are written to disk as they download.</p>
-      <form id="source-form">
-        <label for="source-url">Video or playlist link</label>
-        <input id="source-url" type="password" required placeholder="Paste a video or playlist link" autocomplete="off" spellcheck="false">
-        <details id="extra-options">
-          <summary>Separate audio or page details</summary>
-          <label for="audio-url">Matching audio link, if stored separately</label>
-          <input id="audio-url" type="password" placeholder="Optional audio MP4 or playlist" autocomplete="off" spellcheck="false">
-          <label for="referrer">Video page link</label>
-          <input id="referrer" type="password" placeholder="Optional page where the video plays" autocomplete="off" spellcheck="false">
+
+    <form id="source-form" class="block">
+      <h2 class="group-title">Source</h2>
+      <div class="group">
+        <label class="field">
+          <span class="field-label">Video or playlist link</span>
+          <input id="source-url" type="password" required placeholder="Paste a link" autocomplete="off" spellcheck="false">
+        </label>
+        <details id="extra-options" class="field disclosure">
+          <summary>Separate audio and page details</summary>
+          <label class="field-stack">
+            <span class="field-label">Matching audio link</span>
+            <input id="audio-url" type="password" placeholder="Optional, if audio is stored separately" autocomplete="off" spellcheck="false">
+          </label>
+          <label class="field-stack">
+            <span class="field-label">Page the video plays on</span>
+            <input id="referrer" type="password" placeholder="Optional" autocomplete="off" spellcheck="false">
+          </label>
         </details>
-        <label for="concurrency">Concurrent network reads</label>
-        <select id="concurrency"><option value="1">1 · lowest network use</option><option value="3" selected>3 · balanced</option><option value="6">6 · faster connections</option></select>
-        <button id="inspect" class="copy" type="submit">Check stream</button>
-      </form>
-      <section id="tracks" hidden>
-        <label for="mode">Save</label>
-        <select id="mode"></select>
-        <div class="track-grid">
-          <div><label for="quality">Video quality</label><select id="quality"></select></div>
-          <div><label for="audio">Audio track</label><select id="audio"></select></div>
-        </div>
-        <div id="subtitle-controls" hidden><label for="subtitle">Subtitles</label><select id="subtitle"></select><button id="save-subtitles" class="copy" type="button">Save subtitles (.vtt)</button></div>
-        <p id="track-summary" class="track-summary"></p>
-        <label for="filename">Filename</label>
-        <input id="filename" type="text" value="video.mp4" maxlength="150">
-      </section>
-      <div class="download-actions">
-        <button id="save" class="download" type="button" disabled>Choose file and download</button>
-        <button id="pause" class="copy" type="button" hidden>Pause</button>
-        <button id="finish-recording" class="copy" type="button" hidden>Stop recording and save</button>
-        <button id="cancel" class="copy" type="button" hidden>Cancel</button>
+        <label class="field">
+          <span class="field-label">Parallel connections</span>
+          <select id="concurrency">
+            <option value="auto">Automatic</option>
+            <option value="1">1 · lightest on the network</option>
+            <option value="3" selected>3 · balanced</option>
+            <option value="6">6 · fastest connections</option>
+          </select>
+        </label>
       </div>
-      <section class="progress-area" aria-live="polite">
-        <progress id="progress" max="1" value="0" hidden></progress>
-        <p id="status" role="status">Ready to check a stream.</p>
-        <p id="statistics"></p>
-      </section>
+      <p id="concurrency-hint" class="footnote"></p>
+      <div class="buttons">
+        <button id="inspect" class="large" type="submit">Check Stream</button>
+      </div>
+    </form>
+
+    <section id="tracks" class="block" hidden>
+      <h2 class="group-title">What to save</h2>
+      <div class="group">
+        <label class="field">
+          <span class="field-label">Save</span>
+          <select id="mode"></select>
+        </label>
+        <label class="field">
+          <span class="field-label">Quality</span>
+          <select id="quality"></select>
+        </label>
+        <label class="field">
+          <span class="field-label">Audio</span>
+          <select id="audio"></select>
+        </label>
+        <div id="subtitle-controls" class="field" hidden>
+          <label class="field-label" for="subtitle">Subtitles</label>
+          <div class="inline">
+            <select id="subtitle"></select>
+            <button id="save-subtitles" type="button">Save .vtt</button>
+          </div>
+        </div>
+        <label class="field">
+          <span class="field-label">File name</span>
+          <input id="filename" type="text" value="video.mp4" maxlength="150" spellcheck="false">
+        </label>
+      </div>
+      <p id="track-summary" class="footnote tabular"></p>
     </section>
-    <p class="keep-open">Keep this download tab and Chrome open until it says Saved. You can use other tabs while it works.</p>
-    <p class="help">Supports direct video files, HLS and common DASH streams. Live recording starts with the available playlist window; earlier broadcasts may be unavailable. Protected tracks cannot be saved. Pause/resume works while the download tab remains open; live streams keep recording until stopped. No extra software is needed.</p>
+
+    <div class="buttons actions">
+      <button id="save" class="primary large" type="button" disabled>Choose File and Download</button>
+      <button id="pause" class="large" type="button" hidden>Pause</button>
+      <button id="finish-recording" class="large" type="button" hidden>Stop and Save</button>
+      <button id="cancel" class="large destructive" type="button" hidden>Cancel</button>
+    </div>
+
+    <section class="status-block" aria-live="polite">
+      <p id="status" role="status">Paste a link, then check the stream.</p>
+      <p id="status-help" class="status-help"></p>
+      <p id="status-detail" class="status-detail"></p>
+    </section>
+
+    <section id="progress-area" class="block" hidden>
+      <div class="group progress-card">
+        <progress id="progress" class="progress" max="1" value="0"></progress>
+        <dl id="statistics" class="stats tabular"></dl>
+        <figure class="graph">
+          <canvas id="speed-graph" aria-label="Download speed over the last 90 seconds" role="img"></canvas>
+          <figcaption>Speed · last 90 seconds</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <p class="footnote notes">Keep this tab and Chrome open until it says Saved. You can use other tabs meanwhile. Pausing works while this tab stays open; live streams record until you stop them.</p>
+    <p class="footnote notes">Works with direct video files, HLS and most DASH streams. Copy-protected (DRM) video can't be saved. Live recordings start from what the stream still offers.</p>
   </main>
   <script type="module" src="download.js"></script>
 </body>

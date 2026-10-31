@@ -1,4 +1,11 @@
 import { mediaKind, safeUrl, filenameFor, filenameWithExtension } from "./shared.js";
+import { history, outbox, inbox as inboxStore } from "./store.js";
+import { settings as accountSettings, clearAccount, api } from "./account.js";
+import { record, syncNow, pendingCount } from "./sync.js";
+import * as live from "./live.js";
+import { SpeedRecorder } from "./recorder.js";
+import { recommendConcurrency } from "./lib/concurrency.js";
+import { siteOf, cleanPageUrl } from "./lib/privacy.js";
 
 const queues = new Map();
 const requests = new Map();
@@ -98,6 +105,9 @@ async function openDownload(message) {
     referrer: video.observedReferrer ? video.referrer : video.referrer || sourceTab.url,
     origin: video.origin || "",
     filename: filenameFor(sourceTab.title, url),
+    pageUrl: sourceTab.url || "",
+    pageTitle: sourceTab.title || "",
+    incognito: Boolean(sourceTab.incognito),
     state: "ready",
     text: "Ready to inspect the stream."
   };
@@ -194,8 +204,10 @@ async function downloadOriginal(message) {
     });
   }
   try {
+    const sourceTab = await chrome.tabs.get(message.tabId).catch(() => null);
     const id = await chrome.downloads.download({ url, filename, conflictAction: "uniquify", saveAs: true });
     await chrome.storage.session.set({ [`native:${id}`]: { filename, ruleId } });
+    trackNative(id, { url, kind: video.kind, sourceTab, filename });
     return { ok: true, id };
   } catch (error) {
     if (ruleId) await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [ruleId] });
@@ -205,6 +217,7 @@ async function downloadOriginal(message) {
 
 chrome.downloads.onChanged.addListener(async (delta) => {
   if (!["complete", "interrupted"].includes(delta.state?.current)) return;
+  finishNative(delta.id).catch(() => {});
   const key = `native:${delta.id}`;
   const stored = (await chrome.storage.session.get(key))[key];
   if (stored?.ruleId) await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [stored.ruleId] }).catch(() => {});
@@ -299,7 +312,12 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     if (message.type === "download-original") return downloadOriginal(message);
     if (message.type === "open-download") return openDownload(message);
     if (message.type === "register-download" && sender.tab && sender.url.startsWith(chrome.runtime.getURL("download.html"))) {
+      const previous = message.id ? (await chrome.storage.session.get("jobs")).jobs?.[message.id] : null;
+      const sameSource = previous && previous.url === safeUrl(message.url);
       const job = {
+        pageUrl: sameSource ? previous.pageUrl || "" : "",
+        pageTitle: sameSource ? previous.pageTitle || "" : "",
+        incognito: Boolean(previous?.incognito || sender.tab.incognito),
         id: message.id || crypto.randomUUID(),
         url: safeUrl(message.url),
         audioUrl: message.audioUrl ? safeUrl(message.audioUrl) : "",
@@ -331,6 +349,24 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       await clearRules(sender.tab.id);
       return { ok: true };
     }
+    if (message.type === "download-context") return downloadContext(message, sender);
+    if (message.type === "job-progress") return jobProgress(message, sender);
+    if (message.type === "record-download") return recordDownload(message, sender);
+    if (message.type === "popup-state") return popupState();
+    if (message.type === "sync-now") return { ok: true, result: await syncNow({ force: true }) };
+    if (message.type === "inbox-open") return openInbox(message.id);
+    if (message.type === "inbox-dismiss") return dismissInbox(message.id);
+    if (message.type === "account-linked") {
+      syncNow({ force: true });
+      return { ok: true };
+    }
+    if (message.type === "unlink") {
+      await api("/api/device/me", { method: "DELETE" }).catch(() => {});
+      await clearAccount("user");
+      await outbox.clear();
+      await inboxStore.clear();
+      return { ok: true };
+    }
     return { ok: false, error: "Unknown request." };
   };
   task().then(respond, (error) => respond({ ok: false, error: error.message }));
@@ -343,6 +379,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   serial("jobs", async () => {
     const { jobs = {} } = await chrome.storage.session.get("jobs");
     for (const job of Object.values(jobs)) {
+      if (job.downloadTabId === tabId) live.remove(job.id);
       if (job.downloadTabId === tabId && !["done", "error", "cancelled"].includes(job.state)) {
         job.state = "cancelled";
         job.text = "The download tab was closed. Start again to save the whole video.";
@@ -352,3 +389,238 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     if (!Object.values(jobs).some((job) => ["busy", "paused", "recording"].includes(job.state))) chrome.power.releaseKeepAwake();
   }).catch(() => {});
 });
+
+// ---------------------------------------------------------------------------
+// Library integration: history, live progress, sync, bridge and inbox.
+// ---------------------------------------------------------------------------
+
+async function jobForSender(id, sender) {
+  const { jobs = {} } = await chrome.storage.session.get("jobs");
+  const job = jobs[id];
+  if (!job || job.downloadTabId !== sender.tab?.id) throw new Error("This download belongs to a different tab.");
+  return job;
+}
+
+/** Preferences and the smart-concurrency choice for a download page. */
+async function downloadContext(message, sender) {
+  const job = await jobForSender(message.id, sender);
+  const site = siteOf(job.pageUrl || job.referrer || job.url);
+  const prefs = await accountSettings();
+  const recommendation = recommendConcurrency(await history.all(), site);
+  const activity = job.sourceTabId != null ? (await chrome.storage.session.get(`activity:${job.sourceTabId}`))[`activity:${job.sourceTabId}`] : null;
+  return {
+    ok: true,
+    prefs,
+    recommendation,
+    site,
+    pageTitle: job.pageTitle || "",
+    pageUrl: cleanPageUrl(job.pageUrl || job.referrer || ""),
+    protected: Boolean(activity?.protected),
+    incognito: Boolean(job.incognito)
+  };
+}
+
+async function jobProgress(message, sender) {
+  const job = await jobForSender(message.id, sender);
+  const tabId = sender.tab.id;
+  const snapshot = { ...message.snapshot, method: "stream", incognito: Boolean(job.incognito) };
+  live.registerController(job.id, {
+    pause: () => chrome.tabs.sendMessage(tabId, { type: "job-command", id: job.id, action: "pause" }).catch(() => {}),
+    resume: () => chrome.tabs.sendMessage(tabId, { type: "job-command", id: job.id, action: "resume" }).catch(() => {}),
+    cancel: () => chrome.tabs.sendMessage(tabId, { type: "job-command", id: job.id, action: "cancel" }).catch(() => {}),
+    stop: () => chrome.tabs.sendMessage(tabId, { type: "job-command", id: job.id, action: "stop" }).catch(() => {})
+  });
+  if (message.final) live.finish(job.id, snapshot);
+  else live.update(job.id, snapshot);
+  return { ok: true };
+}
+
+async function recordDownload(message, sender) {
+  const job = await jobForSender(message.id, sender);
+  const result = await record(message.entry, { incognito: job.incognito });
+  return { ok: true, ...result };
+}
+
+async function popupState() {
+  syncNow().catch(() => {});
+  const stored = await chrome.storage.local.get(["account", "disconnected", "lastServer"]);
+  return {
+    ok: true,
+    account: stored.account || null,
+    disconnected: stored.disconnected || null,
+    lastServer: stored.lastServer || "",
+    pending: await pendingCount(),
+    recent: await history.recent(4),
+    inbox: (await inboxStore.all()).sort((a, b) => b.createdAt - a.createdAt)
+  };
+}
+
+const PLAYABLE = ["hls", "dash", "mp4", "webm", "mkv", "mov", "audio"];
+
+async function openInbox(id) {
+  const item = await inboxStore.get(id);
+  if (!item) throw new Error("That link is no longer waiting.");
+  const url = safeUrl(item.url);
+  const target = PLAYABLE.includes(mediaKind(url)) ? chrome.runtime.getURL(`download.html?url=${encodeURIComponent(url)}`) : url;
+  await chrome.tabs.create({ url: target });
+  await inboxStore.remove([id]);
+  api(`/api/inbox/${encodeURIComponent(id)}/opened`, { method: "POST" }).catch(() => {});
+  return { ok: true };
+}
+
+async function dismissInbox(id) {
+  await inboxStore.remove([id]);
+  await api(`/api/inbox/${encodeURIComponent(id)}/dismissed`, { method: "POST" }).catch(() => {});
+  return { ok: true };
+}
+
+chrome.notifications.onClicked.addListener((notificationId) => {
+  if (!notificationId.startsWith("inbox:")) return;
+  chrome.notifications.clear(notificationId);
+  openInbox(notificationId.slice("inbox:".length)).catch(() => {});
+});
+
+// Chrome-native "Original file" downloads: sampled every second for the live
+// view and recorded to history when they end.
+const natives = new Map();
+let nativeTimer = null;
+
+function trackNative(id, { url, kind, sourceTab, filename }) {
+  natives.set(id, {
+    id,
+    jobId: `native-${id}`,
+    url,
+    kind,
+    filename,
+    pageUrl: sourceTab?.url || "",
+    title: sourceTab?.title || filename.replace(/\.[a-z0-9]+$/i, ""),
+    incognito: Boolean(sourceTab?.incognito),
+    startedAt: Date.now(),
+    recorder: new SpeedRecorder()
+  });
+  live.registerController(`native-${id}`, {
+    pause: () => chrome.downloads.pause(id).catch(() => {}),
+    resume: () => chrome.downloads.resume(id).catch(() => {}),
+    cancel: () => chrome.downloads.cancel(id).catch(() => {}),
+    stop: () => chrome.downloads.cancel(id).catch(() => {})
+  });
+  nativeTimer ||= setInterval(sampleNatives, 1000);
+}
+
+async function sampleNatives() {
+  if (!natives.size) {
+    clearInterval(nativeTimer);
+    nativeTimer = null;
+    return;
+  }
+  for (const native of natives.values()) {
+    const [item] = await chrome.downloads.search({ id: native.id }).catch(() => []);
+    if (!item || item.state !== "in_progress") continue;
+    const now = Date.now();
+    native.recorder.update(now, item.bytesReceived, item.paused);
+    const speed = native.recorder.current();
+    const total = item.totalBytes > 0 ? item.totalBytes : null;
+    live.update(native.jobId, {
+      method: "original",
+      state: item.paused ? "paused" : "busy",
+      startedAt: native.startedAt,
+      fraction: total ? item.bytesReceived / total : null,
+      speed,
+      avgSpeed: native.recorder.average(),
+      received: item.bytesReceived,
+      written: item.bytesReceived,
+      estimatedBytes: total,
+      eta: total && speed > 0 ? (total - item.bytesReceived) / speed : null,
+      canPause: item.canResume || !item.paused,
+      paused: item.paused,
+      recent: native.recorder.recent(90),
+      title: native.title,
+      site: siteOf(native.pageUrl || native.url),
+      incognito: native.incognito
+    });
+  }
+}
+
+const NATIVE_ERRORS = { USER_CANCELED: "cancelled", USER_SHUTDOWN: "cancelled", SERVER_FORBIDDEN: "expired", SERVER_UNAUTHORIZED: "expired", SERVER_BAD_CONTENT: "not-found" };
+
+function nativeErrorCode(error) {
+  if (!error) return null;
+  if (NATIVE_ERRORS[error]) return NATIVE_ERRORS[error];
+  if (error.startsWith("NETWORK_")) return "network";
+  if (error === "FILE_NO_SPACE" || error === "FILE_TOO_LARGE") return "disk";
+  if (error.startsWith("FILE_")) return "permission";
+  if (error.startsWith("SERVER_")) return "server";
+  return "unknown";
+}
+
+async function finishNative(id) {
+  const native = natives.get(id);
+  if (!native) return;
+  natives.delete(id);
+  const [item] = await chrome.downloads.search({ id }).catch(() => []);
+  const now = Date.now();
+  const bytes = item?.bytesReceived || native.recorder.lastBytes || 0;
+  const summary = native.recorder.finish(item?.endTime ? Date.parse(item.endTime) || now : now, bytes);
+  const errorCode = item?.state === "interrupted" ? nativeErrorCode(item.error) : null;
+  const state = item?.state === "complete" ? "done" : errorCode === "cancelled" ? "cancelled" : "failed";
+  const basename = (item?.filename || native.filename).split(/[\\/]/).pop();
+  live.finish(native.jobId, { state: state === "done" ? "done" : state === "cancelled" ? "cancelled" : "error", fraction: state === "done" ? 1 : null, speed: 0, errorCode });
+  let mediaHost = "";
+  try { mediaHost = new URL(native.url).hostname; } catch {}
+  await record({
+    id: crypto.randomUUID(),
+    startedAt: native.startedAt,
+    finishedAt: now,
+    state,
+    kind: native.kind,
+    method: "original",
+    mode: native.kind === "audio" ? "audio" : "both",
+    live: false,
+    bytes,
+    received: summary.received,
+    mediaDuration: null,
+    elapsedMs: summary.elapsedMs,
+    activeMs: summary.activeMs,
+    avgSpeed: summary.avgSpeed,
+    peakSpeed: summary.peakSpeed,
+    height: null,
+    container: (basename.match(/\.([a-z0-9]{2,5})$/i)?.[1] || "").toLowerCase(),
+    concurrency: 1,
+    concurrencyAuto: false,
+    errorCode: state === "done" ? null : errorCode,
+    samples: summary.samples,
+    title: native.title,
+    site: siteOf(native.pageUrl || native.url),
+    pageUrl: cleanPageUrl(native.pageUrl),
+    filename: basename,
+    mediaHost,
+    errorMessage: item?.error || ""
+  }, { incognito: native.incognito });
+}
+
+// The website talks to the extension through bridge.js when it is open in
+// this browser (instant live progress and controls).
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== "web-bridge") return;
+  live.acceptBridge(port).then((accepted) => {
+    if (!accepted) return;
+    const handle = (message) => {
+      if (message?.type === "command" && ["pause", "resume", "cancel", "stop"].includes(message.action)) {
+        live.dispatch(String(message.jobId), message.action);
+      } else if (message?.type === "sync-now") {
+        syncNow({ force: true }).catch(() => {});
+      }
+    };
+    accepted.queue.forEach(handle);
+    port.onMessage.addListener(handle);
+  }).catch(() => port.disconnect());
+});
+
+// Sync every minute, and whenever the browser starts.
+chrome.alarms.get("sync").then((alarm) => {
+  if (!alarm) chrome.alarms.create("sync", { periodInMinutes: 1, delayInMinutes: 0.1 });
+});
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "sync") syncNow().catch(() => {});
+});
+chrome.runtime.onStartup.addListener(() => syncNow({ force: true }).catch(() => {}));

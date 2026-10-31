@@ -3,35 +3,63 @@
 <head>
   <meta charset="utf-8">
   <title>MP4 Grabber</title>
+  <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <canvas id="stars" aria-hidden="true"></canvas>
-  <main class="shell">
-    <header class="top">
-      <img class="logo" src="icons/logo.svg" alt="">
-      <div class="heading">
-        <h1>MP4 Grabber</h1>
-        <p class="summary"><span class="signal" aria-hidden="true"></span><span id="summary">Scanning this page…</span></p>
-      </div>
-    </header>
-    <p id="activity" class="activity"></p>
-    <div id="active" class="active"></div>
-    <ul id="list" class="list"></ul>
-    <section id="empty" class="empty" hidden>
-      <p class="empty-title">No videos detected yet</p>
-      <p>Press play on the video, then open this again. Reload the page after installing this version. HLS and DASH playlists appear when the player requests them.</p>
-    </section>
-    <p class="footer"><button id="manual" class="copy" type="button">Paste a video or playlist link</button></p>
-  </main>
+  <header class="top">
+    <img class="logo" src="icons/logo.svg" alt="" width="32" height="32">
+    <div class="heading">
+      <h1>MP4 Grabber</h1>
+      <p id="summary" class="summary">Looking for videos…</p>
+    </div>
+    <button id="account" class="plain account" type="button" hidden></button>
+  </header>
+
+  <p id="activity" class="notice" hidden></p>
+
+  <section id="active-section" class="section" hidden>
+    <h2 class="group-title">In progress</h2>
+    <div id="active" class="group"></div>
+  </section>
+
+  <section id="inbox-section" class="section" hidden>
+    <h2 class="group-title">Sent to this computer</h2>
+    <div id="inbox" class="group"></div>
+  </section>
+
+  <section class="section">
+    <h2 class="group-title" id="page-title">On this page</h2>
+    <ul id="list" class="group list"></ul>
+    <div id="empty" class="group empty" hidden>
+      <p class="empty-title">No videos found yet</p>
+      <p>Play the video, then open MP4 Grabber again. If you just installed or updated it, reload the page first.</p>
+    </div>
+  </section>
+
+  <section id="recent-section" class="section" hidden>
+    <div class="section-head">
+      <h2 class="group-title">Recent</h2>
+      <a id="library-link" class="section-link" href="#" hidden>Open Library</a>
+    </div>
+    <div id="recent" class="group"></div>
+  </section>
+
+  <footer class="footer">
+    <button id="manual" class="plain" type="button">Paste a Link…</button>
+    <span id="sync-state" class="sync-state"></span>
+  </footer>
+
   <template id="row">
     <li class="item">
-      <p class="name"></p>
-      <p class="meta"></p>
-      <p class="check"></p>
+      <div class="item-text">
+        <p class="name"></p>
+        <p class="meta"></p>
+        <p class="check"></p>
+      </div>
       <div class="actions">
-        <button class="copy copy-link" type="button">Copy link</button>
-        <button class="download" type="button">Download</button>
+        <button class="plain copy-link" type="button">Copy Link</button>
+        <button class="primary download" type="button">Download</button>
       </div>
       <p class="status" hidden></p>
     </li>

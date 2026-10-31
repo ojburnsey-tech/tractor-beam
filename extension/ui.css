@@ -1,0 +1,195 @@
+/* Shared design tokens and controls for the popup, download and link pages.
+   Follows the system light/dark setting. Colours are Apple's system palette,
+   with text colours chosen to keep at least 4.5:1 contrast. */
+
+@font-face {
+  font-family: "Inter Var";
+  src: url("fonts/inter-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --label: #1d1d1f;
+  --secondary: #6e6e73;
+  --tertiary: #8e8e93;
+  --separator: rgba(60, 60, 67, 0.16);
+  --fill: rgba(118, 118, 128, 0.12);
+  --fill-hover: rgba(118, 118, 128, 0.18);
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --accent-pressed: #006edb;
+  --on-accent: #ffffff;
+  --accent-wash: rgba(0, 113, 227, 0.1);
+  --green: #248a3d;
+  --red: #d70015;
+  --orange: #c93400;
+  --focus: rgba(0, 113, 227, 0.45);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --radius: 12px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Var", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-raised: #2c2c2e;
+    --label: #f5f5f7;
+    --secondary: #a1a1a6;
+    --tertiary: #7c7c80;
+    --separator: rgba(84, 84, 88, 0.6);
+    --fill: rgba(118, 118, 128, 0.24);
+    --fill-hover: rgba(118, 118, 128, 0.32);
+    --accent: #0a84ff;
+    --accent-hover: #2491ff;
+    --accent-pressed: #0077ed;
+    --accent-wash: rgba(10, 132, 255, 0.16);
+    --green: #30d158;
+    --red: #ff453a;
+    --orange: #ff9f0a;
+    --focus: rgba(10, 132, 255, 0.6);
+    --shadow: none;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+
+body {
+  background: var(--bg);
+  color: var(--label);
+  font: 14px/1.43 var(--font);
+  letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11";
+}
+
+h1, h2, h3, p { margin: 0; }
+
+/* ---------- buttons ---------- */
+
+button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 980px;
+  cursor: pointer;
+  color: var(--accent);
+  background: var(--fill);
+  transition: background-color 120ms ease, transform 100ms ease-out, opacity 120ms ease;
+  white-space: nowrap;
+}
+
+button:hover:not(:disabled) { background: var(--fill-hover); }
+button:active:not(:disabled) { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+
+button.primary {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+button.primary:hover:not(:disabled) { background: var(--accent-hover); }
+button.primary:active:not(:disabled) { background: var(--accent-pressed); }
+
+button.plain {
+  background: transparent;
+  padding-inline: 6px;
+}
+button.plain:hover:not(:disabled) { background: var(--fill); }
+
+button.destructive { color: var(--red); }
+
+button.large {
+  min-height: 36px;
+  padding: 8px 18px;
+  font-size: 14px;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------- form controls ---------- */
+
+input, select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--label);
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--separator);
+  background: var(--surface);
+}
+
+select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+input:disabled, select:disabled { opacity: 0.55; }
+input::placeholder { color: var(--tertiary); }
+
+/* ---------- grouped lists (iOS Settings style) ---------- */
+
+.group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--secondary);
+  margin: 0 4px 6px;
+}
+
+.group {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.group > * + * { border-top: 0.5px solid var(--separator); }
+
+.footnote {
+  font-size: 12px;
+  color: var(--secondary);
+  margin: 6px 4px 0;
+}
+
+.progress {
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--fill);
+  overflow: hidden;
+}
+.progress::-webkit-progress-bar { background: var(--fill); border-radius: 2px; }
+.progress::-webkit-progress-value { background: var(--accent); border-radius: 2px; transition: width 300ms ease; }
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation: none !important; }
+  button:active:not(:disabled) { transform: none; }
+}
+
+@media (prefers-contrast: more) {
+  :root { --separator: rgba(60, 60, 67, 0.5); --secondary: #3a3a3c; }
+}

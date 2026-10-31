@@ -1,15 +1,17 @@
 {
   "manifest_version": 3,
   "name": "MP4 Grabber",
-  "version": "2.0.0",
-  "description": "Download complete HLS, DASH and MP4 videos with sound, writing long videos directly to disk.",
+  "version": "2.1.0",
+  "description": "Download complete HLS, DASH and MP4 videos with sound, and keep a synced history of every download in your Library.",
   "permissions": [
     "webRequest",
     "storage",
     "tabs",
     "declarativeNetRequestWithHostAccess",
     "power",
-    "downloads"
+    "downloads",
+    "alarms",
+    "notifications"
   ],
   "host_permissions": [
     "http://*/*",
@@ -44,6 +46,17 @@
       "all_frames": true,
       "run_at": "document_start",
       "match_origin_as_fallback": true
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "all_frames": false,
+      "run_at": "document_start"
     }
   ],
   "action": {

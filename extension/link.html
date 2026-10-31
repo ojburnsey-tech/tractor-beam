@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Library · MP4 Grabber</title>
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="link.css">
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="icons/logo.svg" alt="" width="64" height="64">
+
+    <section id="connect" hidden>
+      <h1>Connect to your Library</h1>
+      <p class="lead">Your Library keeps a history of every download, shows live progress on any device and syncs your preferences.</p>
+      <form id="connect-form" class="group form">
+        <label class="field">
+          <span class="field-label">Library address</span>
+          <input id="server" type="text" inputmode="url" autocomplete="url" spellcheck="false" required placeholder="https://library.example.com">
+        </label>
+        <label class="field">
+          <span class="field-label">This browser's name</span>
+          <input id="name" type="text" maxlength="60" required>
+        </label>
+      </form>
+      <p class="footnote">Running the Library on this computer? Its address is usually http://localhost:4321.</p>
+      <p id="connect-error" class="error" role="alert"></p>
+      <button id="connect-button" class="primary large wide" type="submit" form="connect-form">Continue</button>
+    </section>
+
+    <section id="waiting" hidden>
+      <h1>Approve in your Library</h1>
+      <p class="lead">A tab with your Library just opened. Sign in if asked, check the code matches, then choose Allow.</p>
+      <p class="code tabular" id="code" aria-label="Pairing code"></p>
+      <p class="footnote center" id="waiting-note">Waiting for approval…</p>
+      <div class="buttons">
+        <button id="reopen" type="button">Open Library Again</button>
+        <button id="cancel" class="plain" type="button">Cancel</button>
+      </div>
+    </section>
+
+    <section id="connected" hidden>
+      <h1>Connected</h1>
+      <p class="lead" id="connected-detail"></p>
+      <div class="group summary">
+        <div class="summary-row"><span>Library</span><span id="summary-server" class="value"></span></div>
+        <div class="summary-row"><span>Account</span><span id="summary-email" class="value"></span></div>
+        <div class="summary-row"><span>This browser</span><span id="summary-name" class="value"></span></div>
+        <div class="summary-row"><span>Last synced</span><span id="summary-sync" class="value"></span></div>
+      </div>
+      <p id="sync-error" class="error" role="alert"></p>
+      <div class="buttons">
+        <a id="open-library" class="button-link primary" href="#" target="_blank" rel="noreferrer">Open Library</a>
+        <button id="sync" type="button">Sync Now</button>
+        <button id="disconnect" class="plain destructive" type="button">Disconnect…</button>
+      </div>
+      <p class="footnote center">Incognito downloads are never saved. Sites you exclude in the Library stay on this computer.</p>
+    </section>
+  </main>
+  <script type="module" src="link.js"></script>
+</body>
+</html>
