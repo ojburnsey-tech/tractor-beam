@@ -1,0 +1,31 @@
+body { width: auto; min-height: 100vh; }
+.download-shell { max-width: 780px; margin: 32px auto; padding: 0 20px 32px; }
+.top { padding: 12px 2px 24px; }
+.top .summary { margin-top: 8px; }
+.version { margin-left: auto; color: var(--muted); font-size: 12px; border: 1px solid var(--hairline); border-radius: 20px; padding: 4px 10px; }
+.panel { border: 1px solid var(--edge); border-radius: 22px; padding: 28px; background: linear-gradient(160deg, #161d31ee, #0b101eee); box-shadow: 0 20px 70px #0005; }
+h2 { margin: 0 0 8px; font-size: 25px; letter-spacing: -0.02em; }
+.intro { color: #b1bed7; margin: 0 0 26px; max-width: 560px; }
+label { display: block; font-size: 13px; font-weight: 600; margin: 18px 0 8px; }
+input, select { width: 100%; padding: 11px 12px; color: var(--ink); background: #050a16; border: 1px solid #344059; border-radius: 9px; font: inherit; }
+input:focus-visible, select:focus-visible { outline: 2px solid var(--plasma); outline-offset: 2px; }
+input:disabled, select:disabled { opacity: 0.65; }
+details { margin: 16px 0; color: #b1bed7; }
+summary { cursor: pointer; font-size: 13px; }
+#inspect { margin-top: 16px; }
+#tracks { border-top: 1px solid var(--hairline); margin-top: 24px; padding-top: 8px; }
+.track-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.track-summary { color: var(--success); font-size: 13px; }
+.download-actions { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+.download-actions button { padding: 11px 20px; }
+.progress-area { margin-top: 24px; border-top: 1px solid var(--hairline); padding-top: 20px; }
+progress { width: 100%; height: 9px; border: 0; border-radius: 10px; appearance: none; }
+progress::-webkit-progress-bar { background: #263147; border-radius: 10px; }
+progress::-webkit-progress-value { background: linear-gradient(90deg, #2f9bff, #a6e9ff); border-radius: 10px; }
+#status { margin: 10px 0 4px; overflow-wrap: anywhere; }
+#status.error { color: var(--danger); }
+#status.done { color: var(--success); }
+#statistics { color: var(--muted); font-size: 12px; min-height: 18px; font-variant-numeric: tabular-nums; }
+.keep-open { color: #b1bed7; margin: 20px 8px 10px; font-size: 13px; }
+.help { color: var(--muted); margin: 10px 8px; font-size: 12px; }
+@media (max-width: 550px) { .download-shell { margin: 12px auto; padding: 0 12px; } .panel { padding: 20px; } .track-grid { grid-template-columns: 1fr; gap: 0; } }

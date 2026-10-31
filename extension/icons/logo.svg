@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <clipPath id="sq"><rect width="128" height="128" rx="28.5"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#24205C"/>
+      <stop offset="0.55" stop-color="#0B0C26"/>
+      <stop offset="1" stop-color="#03040C"/>
+    </linearGradient>
+    <radialGradient id="neb" cx="0.82" cy="0.12" r="0.62">
+      <stop offset="0" stop-color="#6A4BE0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#6A4BE0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="neb2" cx="0.08" cy="0.55" r="0.5">
+      <stop offset="0" stop-color="#1E8CFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#1E8CFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="planet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#10204A"/>
+      <stop offset="0.35" stop-color="#060B1E"/>
+      <stop offset="1" stop-color="#020309"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0.12" stop-color="#6FD3FF" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#D6F6FF"/>
+      <stop offset="0.88" stop-color="#6FD3FF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="208" height="208">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="wide" filterUnits="userSpaceOnUse" x="-40" y="-40" width="208" height="208">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+  <g clip-path="url(#sq)">
+    <rect width="128" height="128" fill="url(#bg)"/>
+    <rect width="128" height="128" fill="url(#neb)"/>
+    <rect width="128" height="128" fill="url(#neb2)"/>
+    <g fill="#E6EEFF">
+      <circle cx="18" cy="20" r="0.9" opacity="0.9"/>
+      <circle cx="31" cy="44" r="0.6" opacity="0.6"/>
+      <circle cx="98" cy="30" r="1.1"/>
+      <circle cx="110" cy="58" r="0.6" opacity="0.7"/>
+      <circle cx="86" cy="12" r="0.7" opacity="0.7"/>
+      <circle cx="14" cy="70" r="0.8" opacity="0.8"/>
+      <circle cx="42" cy="14" r="0.6" opacity="0.5"/>
+      <circle cx="104" cy="80" r="0.7" opacity="0.6"/>
+      <circle cx="24" cy="88" r="0.5" opacity="0.5"/>
+      <circle cx="80" cy="46" r="0.5" opacity="0.5"/>
+    </g>
+    <circle cx="98" cy="30" r="3" fill="#BFD6FF" opacity="0.35" filter="url(#soft)"/>
+    <circle cx="64" cy="178" r="88" fill="url(#planet)"/>
+    <circle cx="64" cy="178" r="88" fill="none" stroke="url(#rim)" stroke-width="1.6"/>
+    <ellipse cx="64" cy="90.5" rx="30" ry="6" fill="#6FD3FF" opacity="0.75" filter="url(#wide)"/>
+    <ellipse cx="64" cy="90.2" rx="9" ry="1.1" fill="#E9FBFF" opacity="0.75"/>
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M64 22 V74 M45 57 L64 76 L83 57" stroke="#2F9BFF" stroke-width="16" opacity="0.55" filter="url(#wide)"/>
+      <path d="M64 22 V74 M45 57 L64 76 L83 57" stroke="#6FD3FF" stroke-width="9" opacity="0.95" filter="url(#soft)"/>
+      <path d="M64 22 V74 M45 57 L64 76 L83 57" stroke="#F4FCFF" stroke-width="4.2"/>
+    </g>
+  </g>
+  <rect x="0.5" y="0.5" width="127" height="127" rx="28" fill="none" stroke="#FFFFFF" stroke-opacity="0.14"/>
+</svg>

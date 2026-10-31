@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MP4 Grabber · Download</title>
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="download.css">
+</head>
+<body class="ready">
+  <main class="download-shell">
+    <header class="top">
+      <img class="logo" src="icons/logo.svg" alt="">
+      <div>
+        <h1>MP4 Grabber</h1>
+        <p class="summary">Complete video. Sound included.</p>
+      </div>
+      <span class="version">2.0</span>
+    </header>
+    <section class="panel">
+      <h2>Save the whole stream</h2>
+      <p class="intro">Choose a source, check its tracks, then save one media file. Long videos are written to disk as they download.</p>
+      <form id="source-form">
+        <label for="source-url">Video or playlist link</label>
+        <input id="source-url" type="password" required placeholder="Paste a video or playlist link" autocomplete="off" spellcheck="false">
+        <details id="extra-options">
+          <summary>Separate audio or page details</summary>
+          <label for="audio-url">Matching audio link, if stored separately</label>
+          <input id="audio-url" type="password" placeholder="Optional audio MP4 or playlist" autocomplete="off" spellcheck="false">
+          <label for="referrer">Video page link</label>
+          <input id="referrer" type="password" placeholder="Optional page where the video plays" autocomplete="off" spellcheck="false">
+        </details>
+        <label for="concurrency">Concurrent network reads</label>
+        <select id="concurrency"><option value="1">1 · lowest network use</option><option value="3" selected>3 · balanced</option><option value="6">6 · faster connections</option></select>
+        <button id="inspect" class="copy" type="submit">Check stream</button>
+      </form>
+      <section id="tracks" hidden>
+        <label for="mode">Save</label>
+        <select id="mode"></select>
+        <div class="track-grid">
+          <div><label for="quality">Video quality</label><select id="quality"></select></div>
+          <div><label for="audio">Audio track</label><select id="audio"></select></div>
+        </div>
+        <div id="subtitle-controls" hidden><label for="subtitle">Subtitles</label><select id="subtitle"></select><button id="save-subtitles" class="copy" type="button">Save subtitles (.vtt)</button></div>
+        <p id="track-summary" class="track-summary"></p>
+        <label for="filename">Filename</label>
+        <input id="filename" type="text" value="video.mp4" maxlength="150">
+      </section>
+      <div class="download-actions">
+        <button id="save" class="download" type="button" disabled>Choose file and download</button>
+        <button id="pause" class="copy" type="button" hidden>Pause</button>
+        <button id="finish-recording" class="copy" type="button" hidden>Stop recording and save</button>
+        <button id="cancel" class="copy" type="button" hidden>Cancel</button>
+      </div>
+      <section class="progress-area" aria-live="polite">
+        <progress id="progress" max="1" value="0" hidden></progress>
+        <p id="status" role="status">Ready to check a stream.</p>
+        <p id="statistics"></p>
+      </section>
+    </section>
+    <p class="keep-open">Keep this download tab and Chrome open until it says Saved. You can use other tabs while it works.</p>
+    <p class="help">Supports direct video files, HLS and common DASH streams. Live recording starts with the available playlist window; earlier broadcasts may be unavailable. Protected tracks cannot be saved. Pause/resume works while the download tab remains open; live streams keep recording until stopped. No extra software is needed.</p>
+  </main>
+  <script type="module" src="download.js"></script>
+</body>
+</html>

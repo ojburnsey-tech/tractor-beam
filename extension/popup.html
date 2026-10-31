@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>MP4 Grabber</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <main class="shell">
+    <header class="top">
+      <img class="logo" src="icons/logo.svg" alt="">
+      <div class="heading">
+        <h1>MP4 Grabber</h1>
+        <p class="summary"><span class="signal" aria-hidden="true"></span><span id="summary">Scanning this page…</span></p>
+      </div>
+    </header>
+    <p id="activity" class="activity"></p>
+    <div id="active" class="active"></div>
+    <ul id="list" class="list"></ul>
+    <section id="empty" class="empty" hidden>
+      <p class="empty-title">No videos detected yet</p>
+      <p>Press play on the video, then open this again. Reload the page after installing this version. HLS and DASH playlists appear when the player requests them.</p>
+    </section>
+    <p class="footer"><button id="manual" class="copy" type="button">Paste a video or playlist link</button></p>
+  </main>
+  <template id="row">
+    <li class="item">
+      <p class="name"></p>
+      <p class="meta"></p>
+      <p class="check"></p>
+      <div class="actions">
+        <button class="copy copy-link" type="button">Copy link</button>
+        <button class="download" type="button">Download</button>
+      </div>
+      <p class="status" hidden></p>
+    </li>
+  </template>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

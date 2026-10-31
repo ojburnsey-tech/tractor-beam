@@ -1,0 +1,21 @@
+MP4 Grabber 2.0 includes the following locally bundled runtime components.
+
+Mediabunny 1.65.0: Copyright (c) 2026-present, Vanilagy and contributors. Mozilla Public License 2.0.
+Unmodified source: vendor/sources/mediabunny-1.65.0.tgz. License: licenses/mediabunny-LICENSE.
+Upstream: https://github.com/Vanilagy/mediabunny
+
+DASH parser and dependencies:
+- min-document 2.19.2: MIT
+- process 0.11.10: MIT
+- mpd-parser 1.4.1: Apache-2.0
+- dom-walk 0.1.2: see included package source and license
+- global 4.4.0: MIT
+- @xmldom/xmldom 0.8.15: MIT
+- @babel/runtime 7.29.10: MIT
+- @videojs/vhs-utils 4.1.3: MIT
+
+Full sources for the DASH parser and its dependencies are supplied in vendor/sources/dash-dependencies-source.tar.gz.
+All included licenses and notices are retained under licenses/. Runtime dependencies were bundled without changing their source files.
+The existing Inter font license remains in fonts/LICENSE-Inter.txt.
+
+Bundle build instructions and exact top-level dependency versions are in the parent folder.
