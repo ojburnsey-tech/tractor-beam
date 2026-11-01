@@ -24,6 +24,29 @@ How it fits together, and the security model, is in [docs/ARCHITECTURE.md](docs/
 - **Privacy.** History is encrypted in your browser with your password, so the server stores ciphertext. Incognito downloads are never saved, sites you list never leave your computer, and you can export as CSV or JSON or delete everything.
 - **Plain-language errors.** Failed downloads explain what happened and what to do, in the extension and the Library.
 
+## Hosted on ChatGPT Sites
+
+The hosted address is https://tractor-beam-library.ojburnsey.chatgpt.site.
+
+1. Open the Site and continue with the Site owner's ChatGPT account.
+2. Create your Library with the prefilled owner email and a password of at least 10 characters. This password encrypts your history.
+3. In the existing extension, choose **Connect Library**, enter the hosted address, compare the codes, then choose **Allow** on the website.
+
+The existing extension remains version 2.1.0 and needs no code or permissions changes. A browser previously linked to a local server must disconnect and connect to the hosted address. Existing local-server history is not automatically transferred. Video files remain on the computer that downloaded them; the Site synchronizes encrypted history, preferences, live progress and links.
+
+ChatGPT Sites must allow public visitors for the unchanged extension to reach its API. The Library still requires its own sign-in for private data and device approval for extension access. Initial account creation requires the owner's verified ChatGPT identity and the `LIBRARY_OWNER_EMAIL` runtime setting, even when the Site is public. The Site starts owner-private until that access change is approved.
+
+`cloud/` adapts the existing API to Cloudflare D1. Database-backed events, live snapshots and queued controls work across Worker instances. Pairing claims are consumed once, sync batches use database transactions, and deleted history cannot be restored by a stale extension outbox. The original local Node server remains available.
+
+Production runtime settings are managed through Sites, never committed:
+
+| Setting | Purpose |
+|---|---|
+| `LIBRARY_OWNER_EMAIL` | Email of the ChatGPT account allowed to create this personal Library |
+| `VAPID_SUBJECT` | Contact for browser push services |
+
+For hosted development, use Node 22.13 or newer, run `npm ci`, then `npm run db:generate` only after schema changes. Run `npm run build` before applying pending migrations locally with the command in `docs/SITES.md`. Start the preview with `npm run site:dev` and run `npm run test:cloud` for D1 integration tests. The browser preview uses the starter's local ChatGPT identity; `.dev.vars` stays untracked.
+
 ## 1. Run the Library
 
 You need [Node.js 22.13 or newer](https://nodejs.org). There's nothing to install. From this folder, run:

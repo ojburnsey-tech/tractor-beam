@@ -1,0 +1,12 @@
+import { cp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const target = path.join(root, "public");
+await rm(target, { recursive: true, force: true });
+await mkdir(target, { recursive: true });
+await cp(path.join(root, "web"), target, { recursive: true });
+await cp(path.join(root, "shared"), path.join(target, "shared"), { recursive: true });
+await rm(path.join(target, "index.html"));
+const html = await readFile(path.join(root, "web/index.html"), "utf8");
+await writeFile(path.join(root, "cloud/page-html.js"), `export default ${JSON.stringify(html)};\n`);
