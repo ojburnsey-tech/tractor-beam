@@ -27,7 +27,7 @@ export function createShell(root) {
   const email = h("span", { class: "account-email truncate" });
   const connection = h("span", { class: "connection" });
   const sidebar = h("aside", { class: "sidebar" },
-    h("a", { class: "brand", href: "/library" }, h("img", { src: "/icons/logo.svg", alt: "", width: 30, height: 30 }), h("span", {}, "MP4 Grabber")),
+    h("a", { class: "brand", href: "/library" }, h("img", { src: "/icons/logo.svg?v=2", alt: "", width: 30, height: 30 }), h("span", {}, "MP4 Grabber")),
     h("nav", { class: "nav", "aria-label": "Main" }, NAV.map((item) => makeLink(item, true))),
     h("div", { class: "sidebar-footer" }, email, connection));
   const tabbar = h("nav", { class: "tabbar", "aria-label": "Main" }, NAV.map((item) => makeLink(item, false)));

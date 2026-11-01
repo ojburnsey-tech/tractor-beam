@@ -11,8 +11,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(message.title || "MP4 Grabber", {
     body: message.body || "",
     tag: message.tag || undefined,
-    icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
+    icon: "/icons/library-192.png",
+    badge: "/icons/library-192.png",
     data: { url: message.url || "/library" }
   }));
 });

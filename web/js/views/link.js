@@ -13,7 +13,7 @@ export function mount(root) {
   root.replaceChildren(h("div", { class: "auth" }, card));
 
   function show(...children) {
-    card.replaceChildren(h("img", { class: "app-icon", src: "/icons/logo.svg", alt: "", width: 76, height: 76 }), ...children);
+    card.replaceChildren(h("img", { class: "app-icon", src: "/icons/logo.svg?v=2", alt: "", width: 76, height: 76 }), ...children);
   }
 
   function finished(title, message, success) {

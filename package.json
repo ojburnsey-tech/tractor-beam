@@ -22,7 +22,8 @@
     "build": "node scripts/run-framework.mjs build",
     "test:cloud": "node --disable-warning=ExperimentalWarning --test test/cloud/*.test.js",
     "prebuild": "node scripts/prepare-site-assets.mjs",
-    "presite:dev": "node scripts/prepare-site-assets.mjs"
+    "presite:dev": "node scripts/prepare-site-assets.mjs",
+    "render-icons": "node scripts/render-icons.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

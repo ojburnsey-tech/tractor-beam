@@ -114,11 +114,11 @@ try {
     await loadSession();
 }
 catch (error) {
-    root.replaceChildren(h("div", { class: "auth" }, h("div", { class: "auth-card" }, h("img", { class: "app-icon", src: "/icons/logo.svg", alt: "" }), h("h1", {}, "Can't reach your Library"), h("p", { class: "lead" }, error.message), h("button", { class: "button primary large", type: "button", onClick: () => location.reload() }, "Try Again"))));
+    root.replaceChildren(h("div", { class: "auth" }, h("div", { class: "auth-card" }, h("img", { class: "app-icon", src: "/icons/logo.svg?v=2", alt: "" }), h("h1", {}, "Can't reach your Library"), h("p", { class: "lead" }, error.message), h("button", { class: "button primary large", type: "button", onClick: () => location.reload() }, "Try Again"))));
     throw error;
 }
 if (state.setupRequired) {
-    root.replaceChildren(h("div", { class: "auth" }, h("div", { class: "auth-card" }, h("img", { class: "app-icon", src: "/icons/logo.svg", alt: "" }), h("h1", {}, "Set up your Library"), h("p", { class: "lead" }, "Sign in with the Site owner's ChatGPT account to create your encrypted Library."), h("a", { class: "button primary large", href: "/signin-with-chatgpt?return_to=%2Fsignup", target: "_top" }, "Continue with ChatGPT"))));
+    root.replaceChildren(h("div", { class: "auth" }, h("div", { class: "auth-card" }, h("img", { class: "app-icon", src: "/icons/logo.svg?v=2", alt: "" }), h("h1", {}, "Set up your Library"), h("p", { class: "lead" }, "Sign in with the Site owner's ChatGPT account to create your encrypted Library."), h("a", { class: "button primary large", href: "/signin-with-chatgpt?return_to=%2Fsignup", target: "_top" }, "Continue with ChatGPT"))));
 }
 else
     startRouter(render);

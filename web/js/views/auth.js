@@ -67,7 +67,7 @@ export function mount(root, { mode, next }) {
                 await signOut();
             } }, "Sign out")));
     }
-    root.replaceChildren(h("div", { class: "auth" }, h("div", { class: "auth-card" }, h("img", { class: "app-icon", src: "/icons/logo.svg", alt: "", width: 76, height: 76 }), h("h1", {}, copy.heading), h("p", { class: "lead" }, copy.lead), form, footer, mode === "signin" ? h("p", { class: "auth-footer caption" }, "Your password protects your encrypted history. Keep it somewhere safe.") : null)));
+    root.replaceChildren(h("div", { class: "auth" }, h("div", { class: "auth-card" }, h("img", { class: "app-icon", src: "/icons/logo.svg?v=2", alt: "", width: 76, height: 76 }), h("h1", {}, copy.heading), h("p", { class: "lead" }, copy.lead), form, footer, mode === "signin" ? h("p", { class: "auth-footer caption" }, "Your password protects your encrypted history. Keep it somewhere safe.") : null)));
     (mode === "unlock" ? password.input : email.input).focus();
     return {};
 }
